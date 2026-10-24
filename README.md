@@ -23,3 +23,14 @@ transfer amendments enabled.
 |---|---|
 | `frontend/apps/web` | Web app (Vite + React) |
 | `frontend/packages/core` | All ledger access; the only package that imports `xrpl` |
+| `frontend/scripts` | Command-line setup scripts |
+
+## Scripts
+
+Setup for the steps that have no screen in the demo. Run from `frontend/` with Node 22 after
+`pnpm install`; each script is safe to re-run. Seeds live in `frontend/scripts/.env`, which git
+ignores.
+
+| Command | What it does |
+|---|---|
+| `node scripts/setup-wallets.ts` | Creates and faucet-funds two accounts per role (broker, depositor, borrower) plus the issuer and treasury |
