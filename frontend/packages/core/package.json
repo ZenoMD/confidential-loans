@@ -1,0 +1,11 @@
+{
+  "name": "@confidential-loans/core",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "xrpl": "5.3.0"
+  }
+}

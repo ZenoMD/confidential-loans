@@ -1,0 +1,21 @@
+{
+  "name": "confidential-loans-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "typecheck": "tsc -p packages/core && tsc -p apps/web",
+    "check": "pnpm typecheck && oxlint && oxfmt --check",
+    "format": "oxfmt --write"
+  },
+  "devDependencies": {
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "typescript": "7.0.2"
+  },
+  "volta": {
+    "node": "22.23.1"
+  },
+  "packageManager": "pnpm@11.3.0"
+}
