@@ -1,5 +1,7 @@
 import { Client } from 'xrpl'
 
+export type { Client }
+
 /** Team devnet running the confidential lending fork of rippled. */
 export const NETWORK_WSS = 'wss://xrpl-confidential-loans.zeno.md'
 export const FAUCET_HOST = 'faucet.xrpl-confidential-loans.zeno.md'
