@@ -38,3 +38,13 @@ ignores.
 | `node scripts/issue-token.ts` | Issues CUSD, an MPT that can hold confidential balances, and registers the issuer and auditor decryption keys |
 | `node scripts/fund-holders.ts` | Opts every account in to CUSD, pays public balances for broker cover and vault deposits, and gives borrowers confidential balances |
 | `node scripts/create-vault.ts` | Creates a closed-ended vault with a loan broker and first-loss cover; `--help` lists the phase-timing options |
+
+## Future work
+
+- **On-chain enforcement of confidential repayments.** The ledger cannot read a confidential
+  repayment, so it does not reject one that is short or late. In this project the loan broker
+  decrypts each repayment with its private key and decides when a loan is delinquent (impaired) or
+  foreclosed (defaulted), then records that decision on chain with `LoanManage`. A complete version
+  would have the borrower attach a zero-knowledge proof that the payment covers the amount due, so
+  the ledger enforces it the way it does for public `LoanPay` (`tecINSUFFICIENT_PAYMENT`,
+  `tecEXPIRED`).
