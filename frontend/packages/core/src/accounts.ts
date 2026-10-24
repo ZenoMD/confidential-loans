@@ -1,12 +1,12 @@
-import xrpl, { Wallet, dropsToXrp } from 'xrpl'
-import type { Client } from 'xrpl'
+import xrpl, { Wallet, deriveConfidentialKeypair, dropsToXrp } from 'xrpl'
+import type { Client, ConfidentialKeypair } from 'xrpl'
 
 import { FAUCET_HOST } from './network.ts'
 
 // xrpl is CommonJS; Node's ESM loader does not expose its ECDSA re-export as a named import.
 const { ECDSA } = xrpl
 
-export type { Wallet }
+export type { ConfidentialKeypair, Wallet }
 
 /** Generates a new ed25519 family seed. */
 export function newSeed(): string {
@@ -17,6 +17,11 @@ export function newSeed(): string {
 
 export function walletFromSeed(seed: string): Wallet {
   return Wallet.fromSeed(seed)
+}
+
+/** Derives an ElGamal keypair for confidential balances from a family seed. */
+export function confidentialKeypair(seed: string): ConfidentialKeypair {
+  return deriveConfidentialKeypair(seed)
 }
 
 function rippledErrorCode(error: unknown): unknown {
