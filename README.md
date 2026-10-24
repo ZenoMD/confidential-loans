@@ -28,7 +28,8 @@ transfer amendments enabled.
 ## Scripts
 
 Setup for the steps that have no screen in the demo. Run from `frontend/` with Node 22 after
-`pnpm install`; each script is safe to re-run. Seeds live in `frontend/scripts/.env`, which git
+`pnpm install`. The setup scripts skip work that is already on the ledger; `create-vault` makes a
+fresh vault each run, because a vault's phase dates are fixed when it is created. Seeds live in `frontend/scripts/.env`, which git
 ignores.
 
 | Command | What it does |
@@ -36,3 +37,4 @@ ignores.
 | `node scripts/setup-wallets.ts` | Creates and faucet-funds two accounts per role (broker, depositor, borrower) plus the issuer and treasury |
 | `node scripts/issue-token.ts` | Issues CUSD, an MPT that can hold confidential balances, and registers the issuer and auditor decryption keys |
 | `node scripts/fund-holders.ts` | Opts every account in to CUSD, pays public balances for broker cover and vault deposits, and gives borrowers confidential balances |
+| `node scripts/create-vault.ts` | Creates a closed-ended vault with a loan broker and first-loss cover; `--help` lists the phase-timing options |
