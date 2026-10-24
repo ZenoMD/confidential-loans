@@ -24,7 +24,8 @@ export function confidentialKeypair(seed: string): ConfidentialKeypair {
   return deriveConfidentialKeypair(seed)
 }
 
-function rippledErrorCode(error: unknown): unknown {
+/** Returns rippled's error code (such as `actNotFound`) from a failed request, if it has one. */
+export function rippledErrorCode(error: unknown): unknown {
   if (typeof error !== 'object' || error === null || !('data' in error)) return undefined
   const { data } = error
   return typeof data === 'object' && data !== null && 'error' in data ? data.error : undefined

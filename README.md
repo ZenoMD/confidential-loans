@@ -35,3 +35,4 @@ ignores.
 |---|---|
 | `node scripts/setup-wallets.ts` | Creates and faucet-funds two accounts per role (broker, depositor, borrower) plus the issuer and treasury |
 | `node scripts/issue-token.ts` | Issues CUSD, an MPT that can hold confidential balances, and registers the issuer and auditor decryption keys |
+| `node scripts/fund-holders.ts` | Opts every account in to CUSD, pays public balances for broker cover and vault deposits, and gives borrowers confidential balances |

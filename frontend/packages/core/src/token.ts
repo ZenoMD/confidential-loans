@@ -1,6 +1,7 @@
 import { MPTokenIssuanceCreateFlags, encodeMPTokenMetadata } from 'xrpl'
 import type { Client, TransactionMetadata, Wallet } from 'xrpl'
 
+import { rippledErrorCode } from './accounts.ts'
 import { submit } from './submit.ts'
 
 /** Largest supply the token can ever have, in whole units (`AssetScale` 0). */
@@ -22,7 +23,7 @@ export async function tokenExists(client: Client, mptIssuanceID: string): Promis
     })
     return true
   } catch (error) {
-    if ((error as { data?: { error?: string } }).data?.error === 'entryNotFound') return false
+    if (rippledErrorCode(error) === 'entryNotFound') return false
     throw error
   }
 }
