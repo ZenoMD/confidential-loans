@@ -22,7 +22,7 @@ a{color:#ffffff;text-decoration:none}a:hover{color:#ffffff}
 
   <div style="display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 48px 64px; padding: 40px 48px 64px">
     <aside aria-label="Who acts on this screen" style="flex: 1 1 280px; max-width: 320px; display: flex; flex-direction: column; align-items: flex-end; gap: 20px">
-      <dc-import name="Role" role="depositor" who="{{depositorName}}" action="Redeems all shares with VaultWithdraw" hint-size="320px,220px"></dc-import>
+      <dc-import name="Role" role="depositor" who="{{depositorName}}" action="Redeems all shares" hint-size="320px,220px"></dc-import>
       <div role="group" aria-label="Depositor" style="display: inline-flex; padding: 4px; border-radius: 9999px; border: 1px solid var(--rule)">
         <button type="button" aria-pressed="{{isA}}" onClick="{{pickA}}" style="{{tabA}}">Depositor A</button>
         <button type="button" aria-pressed="{{isB}}" onClick="{{pickB}}" style="{{tabB}}">Depositor B</button>

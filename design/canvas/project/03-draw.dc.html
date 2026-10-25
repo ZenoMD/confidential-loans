@@ -38,9 +38,13 @@ input::placeholder{color:rgba(255,255,255,0.56);opacity:1}
 
     <section aria-labelledby="draw" style="display: flex; flex-direction: column; gap: 16px">
       <h2 id="draw" style="margin: 0; font: 500 20px/1.4 var(--font-display)">Draw</h2>
-      <label style="display: flex; flex-direction: column; gap: 6px; max-width: 560px; font: var(--type-body-sm); color: var(--mute)">Amount drawn
-        <input type="text" placeholder="$[drawn]" style="width: 100%; box-sizing: border-box; height: 64px; padding: 0; border: 0; border-bottom: 1px solid var(--rule-strong); background: transparent; color: var(--ink); font: 500 40px/1 var(--font-display); letter-spacing: -0.4px">
-      </label>
+      <div style="display: flex; flex-direction: column; gap: 6px; max-width: 420px">
+        <label for="draw-amount" style="font: var(--type-body-sm); color: var(--mute)">Amount drawn</label>
+        <div style="display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--rule-strong)">
+          <span aria-hidden="true" style="font: 500 20px/1.2 var(--font-body); color: var(--dim)">$</span>
+          <input id="draw-amount" type="text" inputmode="decimal" placeholder="[drawn]" style="flex: 1; min-width: 0; box-sizing: border-box; height: 44px; padding: 0; border: 0; background: transparent; color: var(--ink); font: 500 20px/1.2 var(--font-body)">
+        </div>
+      </div>
     </section>
 
     <section aria-labelledby="steps" style="display: flex; flex-direction: column; gap: 20px">

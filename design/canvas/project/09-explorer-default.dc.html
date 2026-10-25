@@ -24,7 +24,7 @@ a{color:#ffffff;text-decoration:none}a:hover{color:#ffffff}
 
   <div style="display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 48px 64px; padding: 40px 48px 64px">
     <aside aria-label="Role and view" style="flex: 1 1 280px; max-width: 320px; display: flex; flex-direction: column; align-items: flex-end; gap: 32px">
-      <dc-import name="Role" role="explorer" who="Explorer" action="Reads the ledger after the default" hint-size="320px,220px"></dc-import>
+      <dc-import name="Role" role="explorer" who="{{viewName}}" action="Reads the ledger after the default" hint-size="320px,220px"></dc-import>
       <div role="group" aria-label="Read the ledger as" style="display: inline-flex; padding: 4px; border-radius: 9999px; border: 1px solid var(--rule-strong)">
         <button type="button" aria-pressed="{{isOutsider}}" onClick="{{showOutsider}}" style="{{tabOutsider}}">Outsider</button>
         <button type="button" aria-pressed="{{isAuditor}}" onClick="{{showAuditor}}" style="{{tabAuditor}}">Auditor</button>
@@ -102,6 +102,7 @@ class Component extends DCLogic {
     return {
       rows,
       totals,
+      viewName: auditor ? 'Auditor' : 'Outsider',
       isOutsider: auditor ? 'false' : 'true',
       isAuditor: auditor ? 'true' : 'false',
       tabOutsider: auditor ? off : on,
