@@ -1,15 +1,15 @@
-import type { Client, TransactionMetadata, TxResponse, Wallet } from 'xrpl'
+import type { Client, Wallet } from 'xrpl'
 
 import { submit } from './submit.ts'
+import type { Submitted } from './submit.ts'
 
-function createdId(response: TxResponse, entryType: string): string {
-  const meta = response.result.meta as TransactionMetadata
+function createdId({ hash, meta }: Submitted, entryType: string): string {
   for (const node of meta.AffectedNodes) {
     if ('CreatedNode' in node && node.CreatedNode.LedgerEntryType === entryType) {
       return node.CreatedNode.LedgerIndex
     }
   }
-  throw new Error(`${response.result.hash} created no ${entryType}`)
+  throw new Error(`${hash} created no ${entryType}`)
 }
 
 /**
@@ -46,8 +46,8 @@ export async function createClosedVault(
     SubscriptionDate: dates.subscriptionDate,
     RedemptionDate: dates.redemptionDate,
   } as const
-  const { hash, response } = await submit(client, tx, owner)
-  return { vaultID: createdId(response, 'Vault'), hash }
+  const submitted = await submit(client, tx, owner)
+  return { vaultID: createdId(submitted, 'Vault'), hash: submitted.hash }
 }
 
 /**
@@ -78,6 +78,6 @@ export async function createLoanBroker(
     VaultID: vaultID,
     DebtMaximum: debtMaximum.toString(),
   } as const
-  const { hash, response } = await submit(client, tx, owner)
-  return { loanBrokerID: createdId(response, 'LoanBroker'), hash }
+  const submitted = await submit(client, tx, owner)
+  return { loanBrokerID: createdId(submitted, 'LoanBroker'), hash: submitted.hash }
 }

@@ -11,23 +11,25 @@ import { rippledErrorCode } from './accounts.ts'
 import { submit } from './submit.ts'
 
 /**
- * Reads an account's `MPToken` for an issuance from the latest validated ledger.
+ * Reads an account's `MPToken` for an issuance from a validated ledger.
  *
  * @param client - Connected client.
  * @param account - Holder address.
  * @param mptIssuanceID - Issuance.
+ * @param ledgerIndex - Ledger to read; the latest validated one by default.
  * @returns The entry, or undefined when the account has not authorized the token.
  */
 export async function readMPToken(
   client: Client,
   account: string,
   mptIssuanceID: string,
+  ledgerIndex: number | 'validated' = 'validated',
 ): Promise<LedgerEntry.MPToken | undefined> {
   try {
     const { result } = await client.request({
       command: 'ledger_entry',
       mptoken: { mpt_issuance_id: mptIssuanceID, account },
-      ledger_index: 'validated',
+      ledger_index: ledgerIndex,
     })
     return result.node as unknown as LedgerEntry.MPToken
   } catch (error) {
@@ -142,6 +144,8 @@ export interface Balance {
 
 /**
  * Reads a holder's public balance and decrypts its confidential spending and inbox balances.
+ * The token and the issuance come from one validated ledger, so the decryption bound matches the
+ * ciphertexts.
  *
  * Decryption searches up to the token's `ConfidentialOutstandingAmount`, so it takes longer as
  * confidential supply grows (about 3.6 s per 1,000,000 of supply per balance).
@@ -158,9 +162,11 @@ export async function readBalance(
   mptIssuanceID: string,
   keypair: ConfidentialKeypair,
 ): Promise<Balance> {
+  const ledger = await client.request({ command: 'ledger', ledger_index: 'validated' })
+  const ledgerIndex = ledger.result.ledger_index
   const [token, issuance, crypto] = await Promise.all([
-    readMPToken(client, account, mptIssuanceID),
-    fetchMPTokenIssuance(client, mptIssuanceID),
+    readMPToken(client, account, mptIssuanceID, ledgerIndex),
+    fetchMPTokenIssuance(client, mptIssuanceID, ledgerIndex),
     loadMptCrypto(),
   ])
   const bound = BigInt(issuance.ConfidentialOutstandingAmount ?? '0')
