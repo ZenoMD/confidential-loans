@@ -1,0 +1,41 @@
+.cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cta-button {
+  min-height: 52px;
+  padding: 0 28px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--canvas);
+  font: var(--type-button);
+  letter-spacing: var(--tracking-ui);
+  cursor: pointer;
+}
+
+.cta-button:disabled {
+  border-color: var(--rule-strong);
+  background: transparent;
+  color: var(--dim);
+  cursor: not-allowed;
+}
+
+.cta-line {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.cta-line[data-kind='alert'] {
+  color: var(--loss);
+}
+
+.cta-line a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
