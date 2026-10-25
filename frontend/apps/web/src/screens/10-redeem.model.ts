@@ -10,13 +10,27 @@ export interface RedeemRow {
   readonly tone: RowTone
 }
 
+/** The Role name of a depositor, also its Toggle label. */
+export function depositorName(depositor: Depositor): 'Depositor A' | 'Depositor B' {
+  return depositor === 'depositorA' ? 'Depositor A' : 'Depositor B'
+}
+
+/** The aside Toggle's options, which render before the ledger is read. */
+export const DEPOSITOR_OPTIONS = [
+  { value: 'depositorA', label: depositorName('depositorA') },
+  { value: 'depositorB', label: depositorName('depositorB') },
+] as const
+
 export interface RedeemModel {
-  /** The Role name, also the Toggle's pressed option. */
-  readonly who: 'Depositor A' | 'Depositor B'
   readonly rows: readonly [RedeemRow, RedeemRow, RedeemRow, RedeemRow]
   readonly cta: { readonly action: Action; readonly label: 'Redeem all shares' }
   /** Why the depositor's last redemption failed, read from the ledger. */
   readonly failure: string | undefined
+  /**
+   * The depositor's VaultWithdraw records on the ledger, failed ones included. The view keys its
+   * Cta on it, so a click's transient alert gives way to `failure` once the ledger records it.
+   */
+  readonly attempts: number
 }
 
 function pub(value: bigint): Public {
@@ -54,7 +68,6 @@ export function redeemModel(s: Snapshot, ui: { readonly depositor: Depositor }):
   const payout = shares === 0n && redeemed !== undefined ? redeemed.value : shareValue(s, shares)
   const available = formatAmount(s.vault.assetsAvailable.value)
   return {
-    who: depositor === 'depositorA' ? 'Depositor A' : 'Depositor B',
     rows: [
       { label: 'Deposited', shown: pub(paidIn), tone: 'mute' },
       { label: 'Interest earned', shown: pub(clampAtZero(payout - paidIn)), tone: 'mute' },
@@ -62,6 +75,7 @@ export function redeemModel(s: Snapshot, ui: { readonly depositor: Depositor }):
       { label: 'Payout', shown: pub(payout), tone: 'ink' },
     ],
     cta: { action: { type: 'VaultWithdraw', depositor }, label: 'Redeem all shares' },
+    attempts: s.log.filter((r) => r.type === 'VaultWithdraw' && r.signers[0] === depositor).length,
     failure:
       redeemFailure === undefined
         ? undefined

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import type { DepositorView, Snapshot } from '@confidential-loans/core/demo-ledger'
-import { redeemModel } from './10-redeem.model.ts'
+import type { DepositorView, Snapshot, TxRecord } from '@confidential-loans/core/demo-ledger'
+import { DEPOSITOR_OPTIONS, depositorName, redeemModel } from './10-redeem.model.ts'
 
 const pub = (value: bigint) => ({ visibility: 'public', value }) as const
 
@@ -19,6 +19,7 @@ interface Fixture {
   readonly lossUnrealized?: bigint
   readonly a?: Partial<DepositorView>
   readonly b?: Partial<DepositorView>
+  readonly log?: readonly TxRecord[]
 }
 
 /** A redemption-phase snapshot. Shares total is the sum of both depositors' shares. */
@@ -47,7 +48,7 @@ function snapshot(f: Fixture): Snapshot {
       borrowerA: { spending: pub(0n), inbox: pub(0n) },
       borrowerB: { spending: pub(0n), inbox: pub(0n) },
     },
-    log: [],
+    log: f.log ?? [],
     submitting: undefined,
     errors: [],
   }
@@ -79,8 +80,12 @@ describe('redeemModel', () => {
     const s = snapshot({ a: SUBSCRIBED, b: SUBSCRIBED })
     const a = redeemModel(s, { depositor: 'depositorA' })
     const b = redeemModel(s, { depositor: 'depositorB' })
-    assert.equal(a.who, 'Depositor A')
-    assert.equal(b.who, 'Depositor B')
+    assert.equal(depositorName('depositorA'), 'Depositor A')
+    assert.equal(depositorName('depositorB'), 'Depositor B')
+    assert.deepEqual(DEPOSITOR_OPTIONS, [
+      { value: 'depositorA', label: 'Depositor A' },
+      { value: 'depositorB', label: 'Depositor B' },
+    ])
     assert.deepEqual(a.cta, {
       action: { type: 'VaultWithdraw', depositor: 'depositorA' },
       label: 'Redeem all shares',
@@ -152,5 +157,31 @@ describe('redeemModel', () => {
       ['Payout', 0n],
     ])
     assert.deepEqual(amounts(snapshot({}), 'depositorA').at(-1), ['Payout', 0n])
+  })
+
+  it('counts the depositor own redemption attempts on the ledger, failed ones included', () => {
+    const record = (signer: TxRecord['signers'][0], result: string): TxRecord => ({
+      hash: `${signer}-${result}`,
+      explorerUrl: '',
+      step: 10,
+      type: 'VaultWithdraw',
+      loan: undefined,
+      signers: [signer],
+      result,
+      closedAt: 1_500,
+      amount: undefined,
+      flag: undefined,
+    })
+    const deposit = { ...record('depositorB', 'tesSUCCESS'), type: 'VaultDeposit' as const }
+    const log = [
+      deposit,
+      record('depositorA', 'tesSUCCESS'),
+      record('depositorB', 'tecINSUFFICIENT_FUNDS'),
+      record('depositorB', 'tecINSUFFICIENT_FUNDS'),
+    ]
+    const s = snapshot({ a: SUBSCRIBED, b: SUBSCRIBED, log })
+    assert.equal(redeemModel(s, { depositor: 'depositorA' }).attempts, 1)
+    assert.equal(redeemModel(s, { depositor: 'depositorB' }).attempts, 2)
+    assert.equal(redeemModel(snapshot({}), { depositor: 'depositorB' }).attempts, 0)
   })
 })
