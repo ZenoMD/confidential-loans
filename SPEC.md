@@ -54,6 +54,45 @@ A loan can be defaulted by the broker if a payment has not been made once `NextP
 
 At any time the broker can settle funds back to the vault with a `LoanBrokerSettle` transaction.
 
+```
+                  +-----------------------------+
+                  |           Lenders           |
+                  +-----------------------------+
+                        |                 ^
+          VaultDeposit  |                 |  VaultWithdraw
+                        v                 |
+                  +-----------------------------+
+                  |  Vault (SingleAssetVault)   |
+                  +-----------------------------+
+                        |                 ^
+        LoanBrokerDraw  |                 |  LoanBrokerSettle
+       (amount public)  |                 |  (amount public)
+                        |                 |
+  PUBLIC  - - - - - - - | - - - - - - - - | - - - - - - - - - - - -
+  CONFIDENTIAL          |                 |
+                        v                 |
+                  #=============================#
+                  #   Broker Lending Balance    #
+                  #                             #
+                  #   inbox =========> spending #
+                  #     LoanBrokerMergeInbox    #
+                  #=============================#
+                       /\                 ||
+  ConfidentialLoanPay  ||                 ||  LoanSet
+     (payment hidden)  ||                 ||  (principal hidden)
+                       ||                 \/
+                  #=============================#
+                  #       Borrower Balance      #
+                  #                             #
+                  #  spending <========= inbox  #
+                  #  ConfidentialMPTMergeInbox  #
+                  #=============================#
+                       ||
+                       ||  ConfidentialMPTSend (XLS-96)
+                       \/
+                  other holders
+```
+
 ## 4. Amendments
 
 This amendment (`ConfidentialLendingProtocol`) builds upon `LendingProtocolV1_1` and `ConfidentialTransfer`.
