@@ -16,7 +16,7 @@ function countdown(ms: number): string {
 }
 
 /**
- * The vault phase bar above the tabs. The countdown runs on ledger close times, so it moves once
+ * The vault phase bar in the corner. The countdown runs on ledger close times, so it moves once
  * per validated ledger.
  *
  * @param s - Any viewer's snapshot.

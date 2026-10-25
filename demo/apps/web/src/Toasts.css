@@ -1,7 +1,8 @@
 .toasts {
   position: fixed;
   right: var(--gutter);
-  bottom: 24px;
+  /* Clears the phase bar in the same corner. */
+  bottom: 64px;
   z-index: 10;
   width: min(360px, calc(100% - 32px));
   margin: 0;

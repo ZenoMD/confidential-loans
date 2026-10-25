@@ -69,23 +69,44 @@
   letter-spacing: var(--tracking-brand);
 }
 
+/* Pinned to the bottom right, under the toasts, and quiet: small, dim, no button chrome. */
 .page-phase {
+  position: fixed;
+  right: var(--gutter);
+  bottom: 12px;
+  z-index: 5;
+  max-width: calc(100% - 2 * var(--gutter));
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
-  gap: 8px 16px;
-  font: var(--type-body-sm);
-  color: var(--mute);
+  gap: 4px 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.85);
+  font: var(--type-caption);
+  color: var(--dim);
 }
 
 .page-phase-name {
-  font: var(--type-control-on);
-  line-height: inherit;
-  color: var(--ink);
+  color: var(--mute);
+  font-weight: 500;
 }
 
-.page-ledger {
-  color: var(--dim);
+.page-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.page-clear:hover {
+  color: var(--ink);
 }
 
 .page-tabs {

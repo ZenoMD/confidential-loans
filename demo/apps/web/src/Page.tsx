@@ -49,27 +49,30 @@ function Body({ status, children }: { status: LedgerStatus; children: ReactNode 
   }
 }
 
-/** The vault phase, the countdown to the next one, the ledger the tabs show, and Clear data. */
+/**
+ * The vault phase, the countdown to the next one, the ledger the tabs show, and Clear data, kept
+ * quiet in the bottom right corner.
+ */
 function PhaseBar() {
   const snapshot = useSnapshot('outsider')
   const { clearData } = useSetup()
   if (snapshot === null) return null
   const model = header(snapshot)
   return (
-    <div className="page-phase">
+    <footer className="page-phase">
       <span className="page-phase-name">{model.phase}</span>
       {model.next !== undefined && <span>{model.next}</span>}
-      <span className="page-ledger">{model.ledger}</span>
+      <span>{model.ledger}</span>
       <button
         type="button"
-        className="pill"
+        className="page-clear"
         onClick={() => {
           if (window.confirm(CLEAR_CONFIRM)) clearData()
         }}
       >
         Clear data
       </button>
-    </div>
+    </footer>
   )
 }
 
@@ -91,7 +94,10 @@ function LensBar({ who }: { who: string }) {
   )
 }
 
-/** A tab: the header with the phase bar and tab bar, then the main column and the role column. */
+/**
+ * A tab: the header with the tab bar, then the main column and the role column, and the phase bar
+ * in the corner.
+ */
 export function Page({ tab, aside, children }: PageProps) {
   const status = useLedgerStatus()
   const errors = useSnapshot('outsider')?.errors ?? []
@@ -100,7 +106,6 @@ export function Page({ tab, aside, children }: PageProps) {
       <header className="page-header">
         <div className="page-top">
           <span className="page-brand">Zeno Confidential Loans</span>
-          <PhaseBar />
         </div>
         <div className="page-row">
           <nav className="page-tabs" aria-label="Actors">
@@ -127,6 +132,7 @@ export function Page({ tab, aside, children }: PageProps) {
           ))}
         </main>
       </div>
+      <PhaseBar />
       {status.status === 'setup' && <Setup note={status.note} />}
     </div>
   )
