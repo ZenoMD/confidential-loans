@@ -1,8 +1,4 @@
-/** An amount as one viewer sees it. `pending` means a decrypt is still running. */
-export type Shown =
-  | { readonly visibility: 'public' | 'decrypted'; readonly value: bigint }
-  | { readonly visibility: 'redacted' }
-  | { readonly visibility: 'pending' }
+import type { Shown } from '@confidential-loans/core/amount'
 
 export type ValueView =
   | { readonly kind: 'amount'; readonly text: string; readonly tone: 'ink' | 'key' | 'dim' }

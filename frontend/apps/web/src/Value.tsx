@@ -1,6 +1,6 @@
 import './Value.css'
 import { valueView } from './value.ts'
-import type { Shown } from './value.ts'
+import type { Shown } from '@confidential-loans/core/amount'
 
 /**
  * One amount, styled by who can see it. An empty or missing label is not rendered.
