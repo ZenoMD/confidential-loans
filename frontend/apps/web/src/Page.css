@@ -2,6 +2,14 @@
   min-height: 100vh;
 }
 
+/* The header's rows line up with the body's column, centered on a wide screen. */
+.page-top,
+.page-row {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+}
+
 /* The aside comes first in the DOM, so it is read first and stacks on top when the row wraps. */
 .page-body {
   display: flex;
@@ -10,6 +18,8 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--page-row-gap) var(--page-column-gap);
+  max-width: calc(var(--content-width) + 2 * var(--gutter));
+  margin-inline: auto;
   padding: var(--page-top) var(--gutter) var(--page-bottom);
 }
 
@@ -84,6 +94,13 @@
   overflow-x: auto;
 }
 
+/* Lines the first tab's text up with the brand; a phone has no gutter to spare for it. */
+@media (min-width: 641px) {
+  .page-tabs {
+    margin-left: -16px;
+  }
+}
+
 .page-tabs a {
   display: inline-flex;
   align-items: center;
@@ -99,4 +116,20 @@
   border-bottom-color: var(--ink);
   color: var(--ink);
   font: var(--type-control-on);
+}
+
+.page-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.page-lensbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding-bottom: 8px;
 }

@@ -1,5 +1,5 @@
 import type { Fact, LabelledAmount } from './value.ts'
-import { Value } from './Value.tsx'
+import { FactValue, Value } from './Value.tsx'
 
 /** A wrapping row of labelled amounts, then labelled facts. */
 export function Stats({
@@ -15,10 +15,7 @@ export function Stats({
         <Value key={label} label={label} shown={shown} />
       ))}
       {facts.map(({ label, text }) => (
-        <span key={label} className="value">
-          <span className="value-label">{label}</span>
-          <span className="value-amount">{text}</span>
-        </span>
+        <FactValue key={label} label={label} text={text} />
       ))}
     </div>
   )

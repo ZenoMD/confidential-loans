@@ -11,7 +11,7 @@ import type { DurationInputs, StageRow } from './setup.ts'
 import { shortHash } from './toast.ts'
 
 const INTRO =
-  'Deploys the demo to the devnet: funded accounts, the confidential token, starting balances ' +
+  'Deploys the demo to the devnet: funded accounts, the confidential token, starting balances' +
   ', the Vault, and the LoanBroker'
 
 const MARKS: Readonly<Record<StageRow['state'], string>> = {

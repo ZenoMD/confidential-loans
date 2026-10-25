@@ -3,7 +3,7 @@ import type { Time } from '@confidential-loans/core/demo-ledger'
 import '#web/Cta.css'
 import { Cta } from '#web/Cta.tsx'
 import { DurationField } from '#web/DurationField.tsx'
-import { useSnapshot } from '#web/ledger.tsx'
+import { useViewSnapshot } from '#web/lens.tsx'
 import { LoanCard } from '#web/LoanCard.tsx'
 import { Modal } from '#web/Modal.tsx'
 import { NAMES } from '#web/names.ts'
@@ -140,7 +140,7 @@ export function BrokerTab() {
   // The form opens over the offer held at the time; a new signature replaces it and closes the form.
   const [offering, setOffering] = useState<{ readonly over: Time | undefined } | null>(null)
   const edit: Edit = (change) => setUi({ ...ui, ...change })
-  const snapshot = useSnapshot('brokerA')
+  const snapshot = useViewSnapshot('brokerA')
   const signedAt = snapshot?.offer?.signedAt
   const formOpen = offering !== null && offering.over === signedAt
   const m = snapshot === null ? null : brokerTab(snapshot, ui)

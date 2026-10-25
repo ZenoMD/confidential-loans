@@ -1,6 +1,6 @@
 import type { Borrower } from '@confidential-loans/core/demo-ledger'
 import { Cta } from '#web/Cta.tsx'
-import { useSnapshot } from '#web/ledger.tsx'
+import { useViewSnapshot } from '#web/lens.tsx'
 import { LoanCard } from '#web/LoanCard.tsx'
 import { NAMES } from '#web/names.ts'
 import { Page } from '#web/Page.tsx'
@@ -16,7 +16,7 @@ interface BorrowerTabProps {
 
 /** The borrowers: their confidential balance, the offer to co-sign, and their loans. */
 export function BorrowerTab({ borrower, onBorrower }: BorrowerTabProps) {
-  const snapshot = useSnapshot(borrower)
+  const snapshot = useViewSnapshot(borrower)
   const m = snapshot === null ? null : borrowerTab(snapshot, borrower)
   const aside = (
     <>

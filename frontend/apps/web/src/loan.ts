@@ -1,4 +1,11 @@
-import type { LoanTerms, LoanView, Time } from '@confidential-loans/core/demo-ledger'
+import type {
+  Borrower,
+  LoanTerms,
+  LoanView,
+  Reader,
+  Seen,
+  Time,
+} from '@confidential-loans/core/demo-ledger'
 import { formatClock } from './cta.ts'
 import { NAMES } from './names.ts'
 import type { Fact, LabelledAmount } from './value.ts'
@@ -54,15 +61,30 @@ export function loanCard(loan: LoanView, now: Time): LoanCardModel {
   }
 }
 
+/** Who reads a loan's encrypted terms: its borrower, the Broker and the Loan Auditor. */
+export function termReaders(borrower: Borrower): readonly Reader[] {
+  return [borrower, 'brokerA', 'loanAuditor']
+}
+
 /**
- * The terms of a held offer. Only the Broker and the borrower see an offer, and both know its
- * amounts, so they show as decrypted.
+ * The terms of an offer. Its amounts are encrypted to the borrower, the Broker and the Loan
+ * Auditor, in the signed LoanSet; the Broker and the borrower know them, anyone else does not.
+ *
+ * @param terms - The offered terms.
+ * @param borrower - Who the offer is to.
+ * @param readable - Whether the viewer is the Broker or the borrower.
  */
-export function termsCard(terms: LoanTerms): {
+export function termsCard(
+  terms: LoanTerms,
+  borrower: Borrower,
+  readable: boolean,
+): {
   readonly amounts: readonly LabelledAmount[]
   readonly facts: readonly Fact[]
 } {
-  const known = (value: bigint) => ({ visibility: 'decrypted', value }) as const
+  const readers = termReaders(borrower)
+  const known = (value: bigint): Seen =>
+    readable ? { visibility: 'decrypted', value, readers } : { visibility: 'redacted', readers }
   return {
     amounts: [
       { label: 'Principal', shown: known(terms.principal) },

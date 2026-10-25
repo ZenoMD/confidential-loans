@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DEMO_AMOUNTS } from '@confidential-loans/core/demo-ledger'
 import type { Depositor } from '@confidential-loans/core/demo-ledger'
 import { Cta } from '#web/Cta.tsx'
-import { useSnapshot } from '#web/ledger.tsx'
+import { useViewSnapshot } from '#web/lens.tsx'
 import { NAMES } from '#web/names.ts'
 import { Page } from '#web/Page.tsx'
 import { Role } from '#web/Role.tsx'
@@ -19,7 +19,7 @@ interface DepositorTabProps {
 /** The depositors: their holdings and the vault, with deposit and redeem. */
 export function DepositorTab({ depositor, onDepositor }: DepositorTabProps) {
   const [amount, setAmount] = useState(String(DEMO_AMOUNTS.deposit))
-  const snapshot = useSnapshot(depositor)
+  const snapshot = useViewSnapshot(depositor)
   const m = snapshot === null ? null : depositorTab(snapshot, depositor, amount)
   const aside = (
     <>

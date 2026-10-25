@@ -4,7 +4,9 @@ import './Tab.css'
 import { header } from './header.ts'
 import { useLedgerStatus, useSetup, useSnapshot } from './ledger.tsx'
 import type { LedgerStatus } from './ledger.tsx'
+import { useLens } from './lens.tsx'
 import { RoleIcon } from './Role.tsx'
+import { Toggle } from './Toggle.tsx'
 import { tabHref, TABS } from './route.ts'
 import type { Tab } from './route.ts'
 import { Setup } from './Setup.tsx'
@@ -71,6 +73,24 @@ function PhaseBar() {
   )
 }
 
+/** Switches every tab between its actor's view and the public ledger. */
+function LensBar({ who }: { who: string }) {
+  const { publicView, setPublicView } = useLens()
+  return (
+    <div className="page-lensbar">
+      <Toggle
+        label="View"
+        options={[
+          { value: 'actor', label: `${who} view` },
+          { value: 'public', label: 'Public ledger' },
+        ]}
+        selected={publicView ? 'public' : 'actor'}
+        onSelect={(view) => setPublicView(view === 'public')}
+      />
+    </div>
+  )
+}
+
 /** A tab: the header with the phase bar and tab bar, then the main column and the role column. */
 export function Page({ tab, aside, children }: PageProps) {
   const status = useLedgerStatus()
@@ -82,14 +102,17 @@ export function Page({ tab, aside, children }: PageProps) {
           <span className="page-brand">Zeno Confidential Loans</span>
           <PhaseBar />
         </div>
-        <nav className="page-tabs" aria-label="Actors">
-          {TABS.map((t) => (
-            <a key={t} href={tabHref(t)} aria-current={t === tab ? 'page' : undefined}>
-              <RoleIcon role={t} size={20} stroke={3} />
-              {TAB_NAMES[t]}
-            </a>
-          ))}
-        </nav>
+        <div className="page-row">
+          <nav className="page-tabs" aria-label="Actors">
+            {TABS.map((t) => (
+              <a key={t} href={tabHref(t)} aria-current={t === tab ? 'page' : undefined}>
+                <RoleIcon role={t} size={20} stroke={3} />
+                {TAB_NAMES[t]}
+              </a>
+            ))}
+          </nav>
+          {status.status === 'ready' && <LensBar who={TAB_NAMES[tab]} />}
+        </div>
       </header>
       <div className="page-body">
         <aside className="page-aside" aria-label="Role">

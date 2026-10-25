@@ -40,7 +40,7 @@ export function borrowerTab(s: Snapshot, borrower: Borrower): BorrowerModel {
     offer:
       offer?.borrower === borrower
         ? {
-            ...termsCard(offer.terms),
+            ...termsCard(offer.terms, borrower, s.viewer !== 'outsider'),
             cosign: { action: { type: 'LoanSetCosign', borrower }, label: 'Co-sign loan' },
           }
         : undefined,

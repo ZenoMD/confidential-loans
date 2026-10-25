@@ -28,4 +28,13 @@ describe('borrowerTab', () => {
     })
     assert.equal(borrowerTab(s, 'borrowerB').offer, undefined)
   })
+
+  it('shows the borrower the offered amounts, and an outsider only who can read them', () => {
+    const offer = { borrower: 'borrowerA', terms: TERMS, signedAt: NOW, stale: false } as const
+    const readers = ['borrowerA', 'brokerA', 'loanAuditor']
+    const own = borrowerTab(snapshot({ offer, viewer: 'borrowerA' }), 'borrowerA').offer
+    assert.deepEqual(own?.amounts[0]?.shown, { visibility: 'decrypted', value: 100_000n, readers })
+    const outside = borrowerTab(snapshot({ offer }), 'borrowerA').offer
+    assert.deepEqual(outside?.amounts[0]?.shown, { visibility: 'redacted', readers })
+  })
 })

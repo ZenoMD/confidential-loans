@@ -1,13 +1,61 @@
-import type { Shown } from '@confidential-loans/core/amount'
+import type { Reader, Seen } from '@confidential-loans/core/demo-ledger'
+import { READER_NAMES } from './names.ts'
 
-export type ValueView =
-  | { readonly kind: 'amount'; readonly text: string; readonly tone: 'ink' | 'key' | 'dim' }
-  | { readonly kind: 'redacted' }
+/** Public, encrypted and read with this viewer's key, or encrypted and unreadable. */
+export type PrivacyIcon = 'public' | 'decrypted' | 'locked'
+
+/** How private a value is: its icon, and the note that says who can read it. */
+export interface Privacy {
+  readonly icon: PrivacyIcon
+  readonly note: string
+}
+
+export type ValueView = Privacy &
+  (
+    | { readonly kind: 'amount'; readonly text: string; readonly tone: 'ink' | 'key' | 'dim' }
+    | { readonly kind: 'redacted' }
+  )
 
 /** An amount with its label, as `<Value>` takes it. */
 export interface LabelledAmount {
   readonly label: string
-  readonly shown: Shown
+  readonly shown: Seen
+}
+
+/** Everything that is not an encrypted amount: shares, dates, schedules and public amounts. */
+export const PUBLIC: Privacy = Object.freeze({
+  icon: 'public',
+  note: 'Public on the ledger: anyone can read it.',
+})
+
+/** Joins names as `A`, `A and B`, or `A, B and C`. */
+function list(names: readonly string[]): string {
+  if (names.length <= 1) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+}
+
+function readable(readers: readonly Reader[] | undefined): string {
+  const names = (readers ?? []).map((reader) => READER_NAMES[reader])
+  return names.length === 0 ? '' : ` Readable by ${list(names)}.`
+}
+
+/** Says who can read an amount and whether this viewer is one of them. */
+export function privacyOf(seen: Seen): Privacy {
+  switch (seen.visibility) {
+    case 'public':
+      return PUBLIC
+    case 'decrypted':
+    case 'pending':
+      return {
+        icon: 'decrypted',
+        note: `Encrypted on the ledger; decrypted with your key.${readable(seen.readers)}`,
+      }
+    case 'redacted':
+      return {
+        icon: 'locked',
+        note: `Encrypted on the ledger.${readable(seen.readers)} You hold none of these keys.`,
+      }
+  }
 }
 
 /** A labelled fact that is not an amount, such as a share count or a date. */
@@ -58,17 +106,19 @@ export function formatAmount(value: bigint): string {
 
 /**
  * Applies the canvas rule: public in ink, decrypted in the key color, otherwise no digits.
- * A pending decrypt reads "Decrypting" in dim text, the plan's D8 default.
+ * A pending decrypt reads "Decrypting" in dim text, the plan's D8 default. Each carries its
+ * privacy icon and note.
  */
-export function valueView(shown: Shown): ValueView {
+export function valueView(shown: Seen): ValueView {
+  const privacy = privacyOf(shown)
   switch (shown.visibility) {
     case 'public':
-      return { kind: 'amount', text: formatAmount(shown.value), tone: 'ink' }
+      return { ...privacy, kind: 'amount', text: formatAmount(shown.value), tone: 'ink' }
     case 'decrypted':
-      return { kind: 'amount', text: formatAmount(shown.value), tone: 'key' }
+      return { ...privacy, kind: 'amount', text: formatAmount(shown.value), tone: 'key' }
     case 'redacted':
-      return { kind: 'redacted' }
+      return { ...privacy, kind: 'redacted' }
     case 'pending':
-      return { kind: 'amount', text: 'Decrypting', tone: 'dim' }
+      return { ...privacy, kind: 'amount', text: 'Decrypting', tone: 'dim' }
   }
 }

@@ -16,32 +16,43 @@ describe('formatAmount', () => {
 })
 
 describe('valueView', () => {
-  it('shows a public amount in ink', () => {
+  it('shows a public amount in ink, for anyone', () => {
     assert.deepEqual(valueView({ visibility: 'public', value: 105_000n }), {
       kind: 'amount',
       text: '$105,000',
       tone: 'ink',
+      icon: 'public',
+      note: 'Public on the ledger: anyone can read it.',
     })
   })
 
-  it('shows a decrypted amount in the key color', () => {
-    assert.deepEqual(valueView({ visibility: 'decrypted', value: 5n }), {
+  it('shows a decrypted amount in the key color, naming who can read it', () => {
+    const seen = { visibility: 'decrypted', value: 5n, readers: ['borrowerA', 'brokerA'] } as const
+    assert.deepEqual(valueView(seen), {
       kind: 'amount',
       text: '$5',
       tone: 'key',
+      icon: 'decrypted',
+      note: 'Encrypted on the ledger; decrypted with your key. Readable by Borrower A and Broker.',
     })
   })
 
-  it('shows neither digits nor $ for a redacted amount', () => {
-    assert.deepEqual(valueView({ visibility: 'redacted' }), { kind: 'redacted' })
+  it('shows neither digits nor $ for a redacted amount, and says the viewer holds no key', () => {
+    const readers = ['borrowerA', 'brokerA', 'loanAuditor'] as const
+    assert.deepEqual(valueView({ visibility: 'redacted', readers }), {
+      kind: 'redacted',
+      icon: 'locked',
+      note:
+        'Encrypted on the ledger. Readable by Borrower A, Broker and Loan Auditor. ' +
+        'You hold none of these keys.',
+    })
   })
 
   it('shows a pending amount as dim "Decrypting" text, not a redaction bar', () => {
-    assert.deepEqual(valueView({ visibility: 'pending' }), {
-      kind: 'amount',
-      text: 'Decrypting',
-      tone: 'dim',
-    })
+    const view = valueView({ visibility: 'pending' })
+    assert.equal(view.kind === 'amount' && view.text, 'Decrypting')
+    assert.equal(view.kind === 'amount' && view.tone, 'dim')
+    assert.equal(view.icon, 'decrypted')
   })
 })
 

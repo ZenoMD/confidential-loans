@@ -7,7 +7,7 @@ import type { Client, ConfidentialKeypair, MptCryptoModule } from 'xrpl'
 
 import { confidentialKeypair, newSeed, walletFromSeed } from './accounts.ts'
 import { ActionFailed, gate, openDemo } from './demo-ledger.ts'
-import type { Demo, LoanTerms, Shown, Snapshot, Viewer } from './demo-ledger.ts'
+import type { Demo, LoanTerms, Seen, Shown, Snapshot, Viewer } from './demo-ledger.ts'
 import type { Kit } from './kit.ts'
 import type { Ledger, LedgerClosedListener } from './network.ts'
 
@@ -291,10 +291,17 @@ async function addLoan(
   return loan
 }
 
+/** What a viewer sees of an amount, without who else can read it. */
+function revealed(seen: Seen): Shown {
+  return seen.visibility === 'public' || seen.visibility === 'decrypted'
+    ? { visibility: seen.visibility, value: seen.value }
+    : { visibility: seen.visibility }
+}
+
 /** Waits until `pick` shows something other than a pending decrypt. */
-async function settled(demo: Demo, viewer: Viewer, pick: (s: Snapshot) => Shown): Promise<Shown> {
+async function settled(demo: Demo, viewer: Viewer, pick: (s: Snapshot) => Seen): Promise<Shown> {
   for (;;) {
-    const shown = pick(demo.snapshot(viewer))
+    const shown = revealed(pick(demo.snapshot(viewer)))
     if (shown.visibility !== 'pending') return shown
     await new Promise<void>((resolve) => {
       const off = demo.subscribe(() => {
@@ -351,7 +358,7 @@ it('reads the vault and the phase from the validated ledger', async () => {
 it('decrypts the Lending Balance for the broker only', async () => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
-  const spending = (s: Snapshot): Shown =>
+  const spending = (s: Snapshot): Seen =>
     s.broker?.lendingBalance.spending ?? { visibility: 'redacted' }
   assert.deepEqual(await settled(demo, 'brokerA', spending), {
     visibility: 'decrypted',
@@ -359,6 +366,13 @@ it('decrypts the Lending Balance for the broker only', async () => {
   })
   assert.deepEqual(await settled(demo, 'outsider', spending), { visibility: 'redacted' })
   assert.deepEqual(await settled(demo, 'borrowerA', spending), { visibility: 'redacted' })
+  assert.deepEqual(spending(demo.snapshot('outsider')).readers, ['brokerA'])
+  // A borrower's MPToken also holds its total for the Issuer and the MPT Auditor.
+  assert.deepEqual(demo.snapshot('outsider').borrowers.borrowerA.spending.readers, [
+    'borrowerA',
+    'issuer',
+    'mptAuditor',
+  ])
   assert.deepEqual(demo.snapshot('brokerA').broker?.debtTotal, {
     visibility: 'public',
     value: 1000n,
@@ -386,13 +400,19 @@ it('lists the LoanBroker loans of both borrowers, oldest first', async () => {
 it('shows loan terms to its borrower and the broker, and no one else', async () => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
-  const owed = (s: Snapshot): Shown => s.loans[0]?.amountOwed ?? { visibility: 'redacted' }
+  const owed = (s: Snapshot): Seen => s.loans[0]?.amountOwed ?? { visibility: 'redacted' }
   for (const viewer of ['borrowerA', 'brokerA'] as const) {
     assert.deepEqual(await settled(demo, viewer, owed), { visibility: 'decrypted', value: 1050n })
   }
   for (const viewer of ['borrowerB', 'outsider', 'depositorA'] as const) {
-    assert.deepEqual(await settled(demo, viewer, owed), { visibility: 'redacted' }, viewer)
+    const shown = await settled(demo, viewer, owed)
+    assert.equal(shown.visibility, 'redacted', viewer)
   }
+  assert.deepEqual(demo.snapshot('outsider').loans[0]?.amountOwed.readers, [
+    'borrowerA',
+    'brokerA',
+    'loanAuditor',
+  ])
   demo.close()
 })
 

@@ -12,6 +12,8 @@ import type {
   LoanView,
   Phase,
   Public,
+  Reader,
+  Seen,
   Snapshot,
   Time,
   Viewer,
@@ -46,7 +48,14 @@ function pub(value: bigint | string | undefined): Public {
 /** Shows amounts to one viewer, recording any decrypt failure instead of throwing. */
 interface Lens {
   show(amount: Amount): Shown
-  encrypted(pairs: ReadonlyArray<readonly [string | undefined, unknown]>): Shown
+  /**
+   * Shows an amount from its ciphertext for each reader that has one. `alsoReadBy` names readers
+   * who reach it through another ciphertext, such as a balance's total, which is not decrypted.
+   */
+  encrypted(
+    entries: ReadonlyArray<readonly [Reader, string | undefined, unknown]>,
+    alsoReadBy?: readonly Reader[],
+  ): Seen
   readonly errors: string[]
 }
 
@@ -69,12 +78,15 @@ function lens(view: ViewInputs, keys: readonly ConfidentialKeypair[]): Lens {
   return {
     show,
     errors,
-    encrypted(pairs) {
+    encrypted(entries, alsoReadBy = []) {
       const to: Record<string, string> = {}
-      for (const [publicKey, ciphertext] of pairs) {
-        if (publicKey !== undefined && typeof ciphertext === 'string') to[publicKey] = ciphertext
+      const readers: Reader[] = []
+      for (const [reader, publicKey, ciphertext] of entries) {
+        if (publicKey === undefined || typeof ciphertext !== 'string') continue
+        to[publicKey] = ciphertext
+        readers.push(reader)
       }
-      return show({ kind: 'encrypted', to, bound })
+      return { ...show({ kind: 'encrypted', to, bound }), readers: [...readers, ...alsoReadBy] }
     },
   }
 }
@@ -97,11 +109,23 @@ function phaseAt(closeTime: number, vault: LedgerEntry.Vault): Phase {
   return 'redemption'
 }
 
-function confidential(lens: Lens, token: LedgerEntry.MPToken | undefined, key: string | undefined) {
+/**
+ * A confidential balance. Its spending and inbox are encrypted to the holder; the Issuer and MPT
+ * Auditor each hold a ciphertext of the total.
+ */
+function confidential(
+  lens: Lens,
+  holder: Reader,
+  token: LedgerEntry.MPToken | undefined,
+  key: string | undefined,
+): ConfidentialBalance {
+  const total: Reader[] = []
+  if (token?.IssuerEncryptedBalance !== undefined) total.push('issuer')
+  if (token?.AuditorEncryptedBalance !== undefined) total.push('mptAuditor')
   return {
-    spending: lens.encrypted([[key, token?.ConfidentialBalanceSpending]]),
-    inbox: lens.encrypted([[key, token?.ConfidentialBalanceInbox]]),
-  } satisfies ConfidentialBalance
+    spending: lens.encrypted([[holder, key, token?.ConfidentialBalanceSpending]], total),
+    inbox: lens.encrypted([[holder, key, token?.ConfidentialBalanceInbox]], total),
+  }
 }
 
 function loanStatus(loan: LedgerEntry.Loan): LoanView['status'] {
@@ -117,9 +141,13 @@ function loanView(
   borrower: Borrower,
   loan: LedgerState['loans'][number],
 ): LoanView {
-  const holders = [keys.borrower(borrower), keys.broker, loan.LoanAuditorEncryptionKey] as const
-  const term = (ciphertexts: readonly [unknown, unknown, unknown]): Shown =>
-    lens.encrypted(holders.map((key, i) => [key, ciphertexts[i]] as const))
+  const holders = [
+    [borrower, keys.borrower(borrower)],
+    ['brokerA', keys.broker],
+    ['loanAuditor', loan.LoanAuditorEncryptionKey],
+  ] as const
+  const term = (ciphertexts: readonly [unknown, unknown, unknown]): Seen =>
+    lens.encrypted(holders.map(([reader, key], i) => [reader, key, ciphertexts[i]] as const))
   const due = loan.NextPaymentDueDate ?? 0
   return {
     loanID: loan.index,
@@ -225,7 +253,7 @@ export function buildSnapshot(
             loanBrokerID: broker.entry.index,
             debtMaximum: pub(broker.entry.DebtMaximum),
             debtTotal: pub(broker.entry.DebtTotal),
-            lendingBalance: confidential(l, broker.lendingBalance, k.broker),
+            lendingBalance: confidential(l, 'brokerA', broker.lendingBalance, k.broker),
           },
     loans,
     offer: offerView(state, view.offer),
@@ -234,8 +262,8 @@ export function buildSnapshot(
       depositorB: depositorView(state, 'depositorB'),
     },
     borrowers: {
-      borrowerA: confidential(l, state.assetTokens.borrowerA, k.borrower('borrowerA')),
-      borrowerB: confidential(l, state.assetTokens.borrowerB, k.borrower('borrowerB')),
+      borrowerA: confidential(l, 'borrowerA', state.assetTokens.borrowerA, k.borrower('borrowerA')),
+      borrowerB: confidential(l, 'borrowerB', state.assetTokens.borrowerB, k.borrower('borrowerB')),
     },
     submitting: view.submitting,
     errors: [...view.errors, ...l.errors],

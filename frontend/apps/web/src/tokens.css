@@ -47,6 +47,8 @@
   --type-card-mono: 400 11px/1.3 var(--font-mono);
 
   --gutter: 48px;
+  /* The main column, the column gap and the role column: 820 + 64 + 320, rounded. */
+  --content-width: 1200px;
   --header-top: 20px;
   --nav-top: 28px;
   --page-top: 40px;

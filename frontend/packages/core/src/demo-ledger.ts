@@ -33,6 +33,15 @@ export const DEMO_AMOUNTS = Object.freeze({
   draw: 200_000n,
 })
 
+/** Who holds a key that amounts can be encrypted to. */
+export type Reader = KeyHolder | 'issuer'
+
+/**
+ * An amount as one viewer sees it. An encrypted amount lists `readers`: everyone holding a key
+ * that reads it. A public amount has none.
+ */
+export type Seen = Shown & { readonly readers?: readonly Reader[] }
+
 /** An amount everyone can read. Assignable to `Shown`. */
 export type Public = { readonly visibility: 'public'; readonly value: bigint }
 
@@ -73,8 +82,8 @@ export type Action =
   | { readonly type: 'VaultWithdraw'; readonly depositor: Depositor }
 
 export interface ConfidentialBalance {
-  readonly spending: Shown
-  readonly inbox: Shown
+  readonly spending: Seen
+  readonly inbox: Seen
 }
 
 export interface BrokerView {
@@ -82,7 +91,7 @@ export interface BrokerView {
   readonly debtMaximum: Public
   /** What the Lending Balance owes the vault: moves only on draw and settle. */
   readonly debtTotal: Public
-  /** Readable with the Broker Key only. */
+  /** Readable with the Broker Key; the Issuer and MPT Auditor read its total. */
   readonly lendingBalance: ConfidentialBalance
 }
 
@@ -91,10 +100,10 @@ export interface LoanView {
   /** Counts the LoanBroker's loans from 1. */
   readonly loanSequence: number
   readonly borrower: Borrower
-  readonly principal: Shown
+  readonly principal: Seen
   /** Reduced by each payment. */
-  readonly amountOwed: Shown
-  readonly periodicPayment: Shown
+  readonly amountOwed: Seen
+  readonly periodicPayment: Seen
   readonly paymentRemaining: number
   /** Seconds. */
   readonly paymentInterval: number

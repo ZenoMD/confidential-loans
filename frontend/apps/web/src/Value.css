@@ -1,12 +1,20 @@
 .value {
+  position: relative;
   display: inline-flex;
   flex-direction: column;
   gap: 4px;
+  outline-offset: 4px;
 }
 
 .value-label {
   font: var(--type-body-sm);
   color: var(--mute);
+}
+
+.value-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .value-amount {
@@ -28,4 +36,44 @@
   height: 20px;
   border-radius: var(--radius-bar);
   background: var(--bar);
+}
+
+.privacy-icon {
+  flex: none;
+  color: var(--dim);
+}
+
+.privacy-icon[data-kind='decrypted'] {
+  color: var(--key);
+}
+
+.privacy-icon[data-kind='locked'] {
+  color: var(--stone);
+}
+
+.value-note {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  font: var(--type-caption);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  display: none;
+  pointer-events: none;
+}
+
+.value:hover .value-note,
+.value:focus-visible .value-note {
+  display: block;
+}
+
+.value:focus-visible {
+  outline: 2px solid var(--ink);
 }

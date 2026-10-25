@@ -4,4 +4,3 @@ dist/
 .env.*
 CLAUDE.local.md
 frontend/scripts/state.json
-xrpl.js

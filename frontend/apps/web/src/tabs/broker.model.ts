@@ -2,7 +2,7 @@ import { DEMO_AMOUNTS } from '@confidential-loans/core/demo-ledger'
 import type { Borrower, LoanTerms, Snapshot } from '@confidential-loans/core/demo-ledger'
 import { formatClock } from '#web/cta.ts'
 import type { Command } from '#web/cta.ts'
-import { loanCard, termsCard } from '#web/loan.ts'
+import { loanCard, termReaders, termsCard } from '#web/loan.ts'
 import type { LoanCardModel } from '#web/loan.ts'
 import { secondsOf } from '#web/duration.ts'
 import type { DurationInput } from '#web/duration.ts'
@@ -148,7 +148,7 @@ function pending(s: Snapshot): BrokerModel['pending'] {
     title: `Offer to ${borrower}`,
     note,
     stale: offer.stale,
-    ...termsCard(offer.terms),
+    ...termsCard(offer.terms, offer.borrower, s.viewer !== 'outsider'),
     withdraw: { action: { type: 'LoanSetWithdraw' }, label: 'Withdraw offer' },
   }
 }
@@ -165,7 +165,8 @@ export function brokerTab(s: Snapshot, ui: BrokerUi): BrokerModel {
   const redacted = { visibility: 'redacted' } as const
   const draw = parseWhole(ui.draw)
   const terms = termsOf(ui.terms)
-  const known = (value: bigint) => ({ visibility: 'decrypted', value }) as const
+  const readers = termReaders(ui.borrower)
+  const known = (value: bigint) => ({ visibility: 'decrypted', value, readers }) as const
   return {
     lending: [
       { label: 'Debt maximum', shown: broker?.debtMaximum ?? redacted },
