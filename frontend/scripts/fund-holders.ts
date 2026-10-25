@@ -26,10 +26,8 @@ const HOLDERS = [
 
 /** Confidential supply the treasury creates once and hands out from. */
 const TREASURY_SUPPLY = 500_000n
-/** Public balances: brokers post first-loss cover, depositors fund the vault. */
+/** Public balances depositors fund the vault with. */
 const PUBLIC_TARGETS: Partial<Record<Role, bigint>> = {
-  brokerA: 50_000_000n,
-  brokerB: 50_000_000n,
   depositorA: 300_000_000n,
   depositorB: 300_000_000n,
 }
@@ -120,7 +118,7 @@ async function printBalances(client: Client): Promise<void> {
 await withClient(async (client) => {
   console.log('1. Holders authorize CUSD')
   await authorizeAll(client)
-  console.log('2. Issuer pays public CUSD for broker cover and vault deposits')
+  console.log('2. Issuer pays depositors public CUSD for vault deposits')
   await topUpPublic(client)
   console.log(
     '3. Treasury creates the confidential supply (issuers cannot hold confidential balances)',
