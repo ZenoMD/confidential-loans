@@ -30,3 +30,16 @@
   flex-direction: column;
   gap: var(--main-gap);
 }
+
+.page-notice {
+  margin: 0;
+  font: var(--type-body-lg);
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.page-notice a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
