@@ -14,10 +14,11 @@ interface Validated {
   readonly result: string
 }
 
-/** A devnet that answers `submit`, `ledger` and `tx` from state the test steps forward. */
+/** A devnet that answers `submit`, `server_info` and `tx` from state the test steps forward. */
 class FakeLedger {
   engine = 'tesSUCCESS'
   validatedLedger = 10
+  firstHeld = 1
   found: Validated | undefined
   txError: Error | undefined
   ledgerError: Error | undefined
@@ -32,13 +33,20 @@ class FakeLedger {
     switch (request.command) {
       case 'submit':
         return { result: { engine_result: this.engine } }
-      case 'ledger':
+      case 'server_info':
         if (this.ledgerError !== undefined) throw this.ledgerError
-        return { result: { ledger_index: this.validatedLedger, validated: true } }
+        return { result: { info: this.info() } }
       case 'tx':
         return { result: this.answerTx() }
       default:
         throw new Error(`Unexpected request ${request.command}`)
+    }
+  }
+
+  private info(): object {
+    return {
+      validated_ledger: { seq: this.validatedLedger },
+      complete_ledgers: `${this.firstHeld}-${this.validatedLedger}`,
     }
   }
 
@@ -106,12 +114,14 @@ test('submit throws at once on a tem result, without polling', async () => {
   await assert.rejects(submit(asClient(fake), accountSet, wallet), (error: unknown) => {
     assert.ok(error instanceof TxFailed)
     assert.equal(error.code, 'temMALFORMED')
+    assert.equal(error.hash, undefined)
+    assert.equal(error.message, 'AccountSet failed with temMALFORMED')
     return true
   })
   assert.equal(fake.txPolls, 0)
 })
 
-test('submit throws with the code and hash when the transaction validates with tec', async (t) => {
+test('submit throws with the code, hash and ledger record on a tec result', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] })
   const fake = new FakeLedger()
   fake.found = { result: 'tecNO_PERMISSION' }
@@ -121,6 +131,8 @@ test('submit throws with the code and hash when the transaction validates with t
     assert.equal(error.code, 'tecNO_PERMISSION')
     assert.match(error.hash ?? '', /^[0-9A-F]{64}$/)
     assert.match(error.message, /AccountSet failed with tecNO_PERMISSION: https:/)
+    assert.equal(error.tx?.TransactionType, 'AccountSet')
+    assert.equal(error.meta?.TransactionResult, 'tecNO_PERMISSION')
     return true
   })
 })
@@ -131,6 +143,17 @@ test('submit throws when LastLedgerSequence validates without the transaction', 
   fake.onTxPoll = () => (fake.validatedLedger += 1)
   const expiring = settle(t, submit(asClient(fake), accountSet, wallet))
   await assert.rejects(expiring, /expired: LastLedgerSequence 12 validated without it/)
+})
+
+test('submit does not report expiry while the node misses ledgers in the window', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const fake = new FakeLedger()
+  fake.onTxPoll = () => {
+    fake.validatedLedger += 1
+    fake.firstHeld = fake.validatedLedger
+  }
+  const stuck = settle(t, submit(asClient(fake), accountSet, wallet))
+  await assert.rejects(stuck, /Could not confirm [0-9A-F]{64}: .*missing ledgers 10 to 12/)
 })
 
 test('submit does not report expiry when the transaction made its last ledger', async (t) => {
@@ -182,15 +205,18 @@ test('submit counts only consecutive failed polls towards giving up', async (t) 
   assert.equal(submitted.meta.TransactionResult, 'tesSUCCESS')
 })
 
-for (const [unreachable, setUp] of [
-  ['ledger', (fake: FakeLedger) => (fake.ledgerError = new Error('NotConnectedError'))],
-  ['lookup', (fake: FakeLedger) => (fake.txError = new Error('NotConnectedError'))],
+for (const [unreachable, breakNode] of [
+  ['ledger', (fake: FakeLedger, cause: Error) => (fake.ledgerError = cause)],
+  ['lookup', (fake: FakeLedger, cause: Error) => (fake.txError = cause)],
 ] as const) {
   test(`submit gives up with the poll error while the ${unreachable} fails`, async (t) => {
     t.mock.timers.enable({ apis: ['setTimeout'] })
     const fake = new FakeLedger()
-    const cause = setUp(fake)
-    fake.onTxPoll = () => (fake.validatedLedger += 1)
+    const cause = new Error('NotConnectedError')
+    fake.onTxPoll = () => {
+      fake.validatedLedger += 1
+      breakNode(fake, cause)
+    }
     const stuck = settle(t, submit(asClient(fake), accountSet, wallet))
     await assert.rejects(stuck, (error: unknown) => {
       assert.ok(error instanceof Error)
@@ -200,9 +226,3 @@ for (const [unreachable, setUp] of [
     })
   })
 }
-
-test('TxFailed without a hash names no explorer link', () => {
-  const error = new TxFailed('LoanBrokerDraw', 'tecNO_PERMISSION')
-  assert.equal(error.hash, undefined)
-  assert.equal(error.message, 'LoanBrokerDraw failed with tecNO_PERMISSION')
-})

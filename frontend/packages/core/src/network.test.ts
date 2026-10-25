@@ -12,11 +12,15 @@ class FakeClient extends EventEmitter {
   subscribes = 0
   disconnects = 0
   failNextConnects = 0
-  hangConnects = false
+  hangNextConnects = 0
+  failNextSubscribes = 0
 
   async connect(): Promise<void> {
     this.connects += 1
-    if (this.hangConnects) return new Promise(() => {})
+    if (this.hangNextConnects > 0) {
+      this.hangNextConnects -= 1
+      return new Promise(() => {})
+    }
     if (this.failNextConnects > 0) {
       this.failNextConnects -= 1
       throw new Error('connection refused')
@@ -29,6 +33,10 @@ class FakeClient extends EventEmitter {
 
   async request(request: { command: string; streams?: string[] }): Promise<{ result: object }> {
     if (request.command === 'subscribe' && request.streams?.includes('ledger') === true) {
+      if (this.failNextSubscribes > 0) {
+        this.failNextSubscribes -= 1
+        throw new Error('subscribe refused')
+      }
       this.subscribes += 1
       return { result: {} }
     }
@@ -61,13 +69,20 @@ async function advance(t: TestContext, ms: number): Promise<void> {
 test('connectLedger rejects when the connection does not open in time', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] })
   const fake = new FakeClient()
-  fake.hangConnects = true
+  fake.hangNextConnects = 1
   const rejected = assert.rejects(
     connectLedger({ client: asClient(fake), timeoutMs: 5000 }),
     /timed out after 5000 ms/,
   )
   await advance(t, 5000)
   await rejected
+  assert.equal(fake.disconnects, 1)
+})
+
+test('connectLedger disconnects and rejects when the subscription fails', async () => {
+  const fake = new FakeClient()
+  fake.failNextSubscribes = 1
+  await assert.rejects(connectLedger({ client: asClient(fake) }), /subscribe refused/)
   assert.equal(fake.disconnects, 1)
 })
 
@@ -132,4 +147,36 @@ test('close during a pending reconnect cancels it', async (t) => {
   await ledger.close()
   await advance(t, 60_000)
   assert.equal(fake.connects, 1)
+})
+
+test('a reconnect that hangs is reported as a timeout and retried', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const fake = new FakeClient()
+  const errors: unknown[] = []
+  const onError = (error: unknown) => errors.push(error)
+  await connectLedger({ client: asClient(fake), timeoutMs: 5000, onError })
+  fake.hangNextConnects = 1
+  fake.emit('disconnected', 1006)
+  await advance(t, 1000)
+  await advance(t, 5000)
+  assert.equal(errors.length, 1)
+  assert.match(String(errors[0]), /timed out after 5000 ms/)
+  await advance(t, 2000)
+  assert.equal(fake.connects, 3)
+  assert.equal(fake.subscribes, 2)
+})
+
+test('close during a hanging reconnect reports no error', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const fake = new FakeClient()
+  const errors: unknown[] = []
+  const onError = (error: unknown) => errors.push(error)
+  const ledger = await connectLedger({ client: asClient(fake), timeoutMs: 5000, onError })
+  fake.hangNextConnects = 1
+  fake.emit('disconnected', 1006)
+  await advance(t, 1000)
+  await ledger.close()
+  await advance(t, 60_000)
+  assert.deepEqual(errors, [])
+  assert.equal(fake.connects, 2)
 })

@@ -50,7 +50,10 @@ export interface Ledger {
 }
 
 export interface LedgerOptions {
-  /** Milliseconds to wait for the socket to open or a request to answer. Defaults to 20 000. */
+  /**
+   * Milliseconds for the socket to open and subscribe, on connect and on each reconnect; the
+   * default client also uses it as its request timeout. Defaults to 20 000.
+   */
   timeoutMs?: number
   /** Receives each failed reconnect attempt; another attempt follows. Defaults to console.error. */
   onError?: (error: unknown) => void
@@ -88,9 +91,8 @@ class Connection implements Ledger {
     this.onError = onError
   }
 
-  async open(): Promise<void> {
-    await withTimeout(this.client.connect(), this.timeoutMs, 'Connecting to the ledger')
-    await this.client.request({ command: 'subscribe', streams: ['ledger'] })
+  open(): Promise<void> {
+    return withTimeout(this.connectAndSubscribe(), this.timeoutMs, 'Connecting to the ledger')
   }
 
   listen(): void {
@@ -110,6 +112,11 @@ class Connection implements Ledger {
     await this.client.disconnect()
   }
 
+  private async connectAndSubscribe(): Promise<void> {
+    await this.client.connect()
+    await this.client.request({ command: 'subscribe', streams: ['ledger'] })
+  }
+
   private readonly forward = (ledger: LedgerStream): void => {
     for (const listener of this.listeners) listener(ledger.ledger_index, ledger.ledger_time)
   }
@@ -126,7 +133,7 @@ class Connection implements Ledger {
         await this.open()
         break
       } catch (error) {
-        this.onError(error)
+        if (!this.closed) this.onError(error)
       }
     }
     this.reconnecting = false
@@ -141,12 +148,11 @@ class Connection implements Ledger {
  *
  * @param options - Timeout, reconnect error sink, and the client to drive.
  * @returns The open connection.
- * @throws When the socket does not open or subscribe within the timeout.
+ * @throws When the socket does not open and subscribe within the timeout, or either fails.
  */
 export async function connectLedger(options: LedgerOptions = {}): Promise<Ledger> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
-  const client =
-    options.client ?? new Client(NETWORK_WSS, { timeout: timeoutMs, connectionTimeout: timeoutMs })
+  const client = options.client ?? new Client(NETWORK_WSS, { timeout: timeoutMs })
   const onError =
     options.onError ?? ((error: unknown) => console.error('Ledger reconnect failed', error))
   const connection = new Connection(client, timeoutMs, onError)
@@ -169,15 +175,14 @@ export interface ServerStatus {
 /**
  * Reads `server_info` from the team devnet.
  *
+ * @param client - Connected client.
  * @returns The node's build version, network ID, and latest validated ledger index.
  */
-export async function readServerStatus(): Promise<ServerStatus> {
-  return withClient(async (client) => {
-    const { info } = (await client.request({ command: 'server_info' })).result
-    return {
-      buildVersion: info.build_version,
-      networkId: info.network_id,
-      validatedLedger: info.validated_ledger?.seq,
-    }
-  })
+export async function readServerStatus(client: Client): Promise<ServerStatus> {
+  const { info } = (await client.request({ command: 'server_info' })).result
+  return {
+    buildVersion: info.build_version,
+    networkId: info.network_id,
+    validatedLedger: info.validated_ledger?.seq,
+  }
 }
