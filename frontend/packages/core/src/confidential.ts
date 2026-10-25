@@ -8,6 +8,7 @@ import {
 import type { Client, ConfidentialKeypair, LedgerEntry, Wallet } from 'xrpl'
 
 import { rippledErrorCode } from './accounts.ts'
+import type { Decrypt } from './amount.ts'
 import { submit } from './submit.ts'
 
 /**
@@ -134,6 +135,10 @@ export async function sendConfidential(
   return (await submit(client, tx, sender)).hash
 }
 
+/** Decrypts with mpt-crypto, loaded through xrpl. The decrypt the app passes to the display. */
+export const decryptCiphertext: Decrypt = async (ciphertext, privateKey, bound) =>
+  (await loadMptCrypto()).decryptAmount(ciphertext, privateKey, bound)
+
 export interface Balance {
   public: bigint
   spending: bigint
@@ -158,14 +163,13 @@ export async function readBalance(
   mptIssuanceID: string,
   keypair: ConfidentialKeypair,
 ): Promise<Balance> {
-  const [token, issuance, crypto] = await Promise.all([
+  const [token, issuance] = await Promise.all([
     readMPToken(client, account, mptIssuanceID),
     fetchMPTokenIssuance(client, mptIssuanceID),
-    loadMptCrypto(),
   ])
   const bound = BigInt(issuance.ConfidentialOutstandingAmount ?? '0')
   const decrypt = async (ciphertext: string | undefined): Promise<bigint> =>
-    ciphertext === undefined ? 0n : crypto.decryptAmount(ciphertext, keypair.privateKey, bound)
+    ciphertext === undefined ? 0n : decryptCiphertext(ciphertext, keypair.privateKey, bound)
   const [spending, inbox] = await Promise.all([
     decrypt(token?.ConfidentialBalanceSpending),
     decrypt(token?.ConfidentialBalanceInbox),
