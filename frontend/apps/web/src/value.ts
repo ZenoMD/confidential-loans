@@ -5,9 +5,8 @@ export type Shown =
   | { readonly visibility: 'pending' }
 
 export type ValueView =
-  | { readonly kind: 'amount'; readonly text: string; readonly tone: 'ink' | 'key' }
+  | { readonly kind: 'amount'; readonly text: string; readonly tone: 'ink' | 'key' | 'dim' }
   | { readonly kind: 'redacted' }
-  | { readonly kind: 'pending' }
 
 /** Formats a whole-unit amount as `$105,000`. */
 export function formatAmount(value: bigint): string {
@@ -17,7 +16,10 @@ export function formatAmount(value: bigint): string {
   return `$${value.toLocaleString('en-US')}`
 }
 
-/** Applies the canvas rule: public in ink, decrypted in the key color, otherwise no digits. */
+/**
+ * Applies the canvas rule: public in ink, decrypted in the key color, otherwise no digits.
+ * A pending decrypt reads "Decrypting" in dim text, the plan's D8 default.
+ */
 export function valueView(shown: Shown): ValueView {
   switch (shown.visibility) {
     case 'public':
@@ -25,7 +27,8 @@ export function valueView(shown: Shown): ValueView {
     case 'decrypted':
       return { kind: 'amount', text: formatAmount(shown.value), tone: 'key' }
     case 'redacted':
+      return { kind: 'redacted' }
     case 'pending':
-      return { kind: shown.visibility }
+      return { kind: 'amount', text: 'Decrypting', tone: 'dim' }
   }
 }

@@ -32,8 +32,15 @@ describe('valueView', () => {
     })
   })
 
-  it('shows neither digits nor $ for a redacted or pending amount', () => {
+  it('shows neither digits nor $ for a redacted amount', () => {
     assert.deepEqual(valueView({ visibility: 'redacted' }), { kind: 'redacted' })
-    assert.deepEqual(valueView({ visibility: 'pending' }), { kind: 'pending' })
+  })
+
+  it('shows a pending amount as dim "Decrypting" text, not a redaction bar', () => {
+    assert.deepEqual(valueView({ visibility: 'pending' }), {
+      kind: 'amount',
+      text: 'Decrypting',
+      tone: 'dim',
+    })
   })
 })

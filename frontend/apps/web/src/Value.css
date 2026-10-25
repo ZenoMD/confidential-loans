@@ -18,14 +18,14 @@
   color: var(--key);
 }
 
+.value-amount[data-tone='dim'] {
+  color: var(--dim);
+}
+
 .value-bar {
   display: block;
   width: 96px;
   height: 20px;
   border-radius: var(--radius-bar);
   background: var(--bar);
-}
-
-.value-bar[data-pending] {
-  background: var(--rule);
 }
