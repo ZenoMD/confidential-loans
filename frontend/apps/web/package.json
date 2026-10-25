@@ -2,6 +2,9 @@
   "name": "web",
   "private": true,
   "type": "module",
+  "imports": {
+    "#web/*": "./src/*"
+  },
   "scripts": {
     "dev": "vite --port 5173 --strictPort",
     "build": "vite build"

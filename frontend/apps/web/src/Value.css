@@ -1,0 +1,31 @@
+.value {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.value-label {
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.value-amount {
+  font: var(--type-amount);
+  color: var(--ink);
+}
+
+.value-amount[data-tone='key'] {
+  color: var(--key);
+}
+
+.value-bar {
+  display: block;
+  width: 96px;
+  height: 20px;
+  border-radius: var(--radius-bar);
+  background: var(--bar);
+}
+
+.value-bar[data-pending] {
+  background: var(--rule);
+}

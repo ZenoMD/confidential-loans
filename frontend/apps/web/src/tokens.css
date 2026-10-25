@@ -1,0 +1,97 @@
+/* Canvas tokens from design/canvas/project/*.dc.html. The canvas is dark only. */
+:root {
+  color-scheme: dark;
+
+  --canvas: #000000;
+  --surface-deep: #0a0a0a;
+  --surface-elevated: #16181a;
+  --ink: #ffffff;
+  --mute: rgba(255, 255, 255, 0.72);
+  --dim: rgba(255, 255, 255, 0.56);
+  --rule: rgba(255, 255, 255, 0.12);
+  --rule-strong: rgba(255, 255, 255, 0.32);
+  --key: #627eea;
+  --bar: #5c5e60;
+  --loss: #e5484d;
+  --stone: #8d969e;
+  --progress-done: rgba(255, 255, 255, 0.48);
+  --progress-upcoming: rgba(255, 255, 255, 0.16);
+
+  --font-display: 'General Sans', 'Aeonik Pro', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --type-display-lg: 500 48px/1.21 var(--font-display);
+  --tracking-display-lg: -0.48px;
+  --type-role: 500 32px/1.15 var(--font-display);
+  --tracking-role: -0.32px;
+  --type-brand: 500 22px/1 var(--font-display);
+  --tracking-brand: -0.3px;
+  --type-heading-sm: 500 20px/1.4 var(--font-display);
+  --type-amount: 500 20px/1.2 var(--font-body);
+  --type-body-lg: 400 18px/1.56 var(--font-body);
+  --type-button: 600 16px/1 var(--font-body);
+  --tracking-ui: 0.24px;
+  --type-step-name: 500 16px/1.3 var(--font-body);
+  --type-cell: 500 15px/1.3 var(--font-body);
+  --type-body-sm: 400 14px/1.43 var(--font-body);
+  --type-control: 500 14px/1 var(--font-body);
+  --type-control-on: 600 14px/1 var(--font-body);
+  --type-caption: 400 13px/1.4 var(--font-body);
+  --type-nav: 500 13px/1 var(--font-body);
+  --type-nav-current: 600 13px/1.3 var(--font-body);
+  --type-pill: 500 13px/1 var(--font-body);
+  --type-hash: 400 13px/1 var(--font-mono);
+  --type-card-number: 600 12px/1 var(--font-body);
+  --type-card-title: 500 14px/1.25 var(--font-display);
+  --type-card-mono: 400 11px/1.3 var(--font-mono);
+
+  --gutter: 48px;
+  --header-top: 20px;
+  --nav-top: 28px;
+  --page-top: 40px;
+  --page-bottom: 64px;
+  --page-row-gap: 48px;
+  --page-column-gap: 64px;
+  --main-gap: 48px;
+  --aside-gap: 24px;
+  --radius-pill: 9999px;
+  --radius-card: 12px;
+  --radius-bar: 2px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+input::placeholder {
+  color: var(--dim);
+  opacity: 1;
+}

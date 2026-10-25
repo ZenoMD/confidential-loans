@@ -1,38 +1,23 @@
-import { useEffect, useState } from 'react'
-import { NETWORK_WSS, readServerStatus } from '@confidential-loans/core/network'
-import type { ServerStatus } from '@confidential-loans/core/network'
+import { useEffect, useSyncExternalStore } from 'react'
+import { Page } from './Page.tsx'
+import { parseRoute } from './route.ts'
+import type { Screen } from './route.ts'
+import { FlowMap } from './screens/00-flow-map.tsx'
 
-type Status =
-  | { kind: 'loading' }
-  | { kind: 'ok'; server: ServerStatus }
-  | { kind: 'error'; message: string }
+function subscribe(onChange: () => void): () => void {
+  window.addEventListener('hashchange', onChange)
+  return () => window.removeEventListener('hashchange', onChange)
+}
 
+function useRoute(): Screen {
+  return useSyncExternalStore(subscribe, () => parseRoute(window.location.hash))
+}
+
+/** Routes `#/` to the flow map and `#/1` to `#/10` to their step screens. */
 export function App() {
-  const [status, setStatus] = useState<Status>({ kind: 'loading' })
-
+  const screen = useRoute()
   useEffect(() => {
-    let active = true
-    readServerStatus().then(
-      (server) => active && setStatus({ kind: 'ok', server }),
-      (error: unknown) => active && setStatus({ kind: 'error', message: String(error) }),
-    )
-    return () => {
-      active = false
-    }
-  }, [])
-
-  return (
-    <main>
-      <h1>Confidential Loans</h1>
-      <p>Network: {NETWORK_WSS}</p>
-      {status.kind === 'loading' && <p>Connecting...</p>}
-      {status.kind === 'error' && <p role="alert">Connection failed: {status.message}</p>}
-      {status.kind === 'ok' && (
-        <p>
-          rippled {status.server.buildVersion}, network {status.server.networkId}, validated ledger{' '}
-          {status.server.validatedLedger}
-        </p>
-      )}
-    </main>
-  )
+    window.scrollTo(0, 0)
+  }, [screen])
+  return screen === 0 ? <FlowMap /> : <Page step={screen} />
 }

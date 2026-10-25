@@ -1,0 +1,156 @@
+.flow {
+  --flow-gutter: 64px;
+  padding: 104px 0 64px;
+}
+
+.flow-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px 64px;
+  padding: 0 var(--flow-gutter);
+}
+
+.flow-title {
+  margin: 0;
+  font: var(--type-display-lg);
+  letter-spacing: var(--tracking-display-lg);
+}
+
+.flow-legend {
+  width: 596px;
+  max-width: 100%;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.flow-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flow-exposure {
+  flex: none;
+  color: var(--ink);
+}
+
+.flow-exposure[data-exposure='encrypted'] {
+  color: var(--key);
+}
+
+.flow-exposure[data-exposure='public'] {
+  color: var(--stone);
+}
+
+/* Below the board's minimum width the board scrolls inside this region, not the page. */
+.flow-scroll {
+  margin-top: 136px;
+  padding: 0 var(--flow-gutter) 8px;
+  overflow-x: auto;
+}
+
+.flow-board {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) repeat(10, minmax(100px, 143px));
+  grid-template-rows: 40px 32px repeat(4, minmax(132px, auto));
+  min-width: min-content;
+}
+
+.flow-phase {
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  margin: 0 2.5px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-elevated);
+  font: var(--type-pill);
+  letter-spacing: var(--tracking-ui);
+}
+
+.flow-lane {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+
+.flow-lane[data-shaded] {
+  background: var(--surface-deep);
+}
+
+.flow-lane[data-last] {
+  border-bottom: 1px solid var(--rule);
+}
+
+.flow-lane-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--type-heading-sm);
+}
+
+.flow-lane-members {
+  font: var(--type-caption);
+  color: var(--stone);
+}
+
+.flow-card {
+  margin: 10px 7px;
+  min-height: 112px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--rule);
+  background: var(--surface-elevated);
+}
+
+.flow-card-number {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font: var(--type-card-number);
+  color: var(--mute);
+}
+
+.flow-card-title {
+  font: var(--type-card-title);
+}
+
+.flow-card-transactions {
+  font: var(--type-card-mono);
+  color: var(--stone);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .flow {
+    --flow-gutter: var(--gutter);
+    padding-top: 48px;
+  }
+
+  .flow-title {
+    font-size: 32px;
+  }
+
+  .flow-legend {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-scroll {
+    margin-top: 48px;
+  }
+}

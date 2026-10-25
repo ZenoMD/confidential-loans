@@ -1,0 +1,103 @@
+.stepnav-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  padding: var(--header-top) var(--gutter) 0;
+}
+
+.stepnav-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.stepnav-logo {
+  font: var(--type-brand);
+  letter-spacing: var(--tracking-brand);
+}
+
+.stepnav-dot {
+  color: var(--key);
+}
+
+.stepnav-product {
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.stepnav-phase {
+  font: var(--type-body-sm);
+}
+
+.stepnav-steps {
+  padding: var(--nav-top) var(--gutter) 0;
+}
+
+.stepnav-steps ol {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.stepnav-steps a {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--dim);
+}
+
+.stepnav-icons {
+  display: flex;
+  gap: 4px;
+  height: 16px;
+}
+
+.stepnav-progress {
+  height: 3px;
+  background: var(--progress-upcoming);
+}
+
+.stepnav-text {
+  font: var(--type-nav);
+}
+
+.stepnav-steps a[data-state='done'] {
+  color: var(--mute);
+}
+
+.stepnav-steps a[data-state='done'] .stepnav-progress {
+  background: var(--progress-done);
+}
+
+.stepnav-steps a[data-state='current'] {
+  color: var(--ink);
+}
+
+.stepnav-steps a[data-state='current'] .stepnav-progress {
+  background: var(--ink);
+}
+
+.stepnav-steps a[data-state='current'] .stepnav-text {
+  font: var(--type-nav-current);
+}
+
+/* Ten columns leave no room for the current label on a phone; it moves under the row. */
+@media (max-width: 640px) {
+  .stepnav-steps ol:has([aria-current='page']) {
+    padding-bottom: 24px;
+  }
+
+  .stepnav-steps a[data-state='current'] .stepnav-text {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    white-space: nowrap;
+  }
+}
