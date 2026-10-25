@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import './Page.css'
 import { useLedgerStatus } from './ledger.tsx'
 import type { LedgerStatus } from './ledger.tsx'
-import { KIT_HREF } from './route.ts'
 import type { Step } from './route.ts'
 import { StepNav } from './StepNav.tsx'
 
@@ -18,14 +17,9 @@ function Notice({ status }: { status: Exclude<LedgerStatus, { status: 'ready' }>
   switch (status.status) {
     case 'noKit':
       return (
-        <p className="page-notice">
-          <a href={KIT_HREF}>Load the demo kit</a> to run this step.
-        </p>
-      )
-    case 'badKit':
-      return (
         <p className="page-notice" role="alert">
-          {status.error}. <a href={KIT_HREF}>Load the demo kit again</a>.
+          Could not load the demo kit: {status.error}. Run <code>node scripts/setup.ts</code> in{' '}
+          <code>frontend/</code>, then reload.
         </p>
       )
     case 'connecting':
@@ -33,7 +27,7 @@ function Notice({ status }: { status: Exclude<LedgerStatus, { status: 'ready' }>
     case 'failed':
       return (
         <p className="page-notice" role="alert">
-          Could not open the demo: {status.error}. <a href={KIT_HREF}>Check the kit</a>.
+          Could not open the demo: {status.error}.
         </p>
       )
   }

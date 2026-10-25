@@ -1,8 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import type { ComponentType } from 'react'
-import { KitPage } from './KitPage.tsx'
 import { parseRoute } from './route.ts'
-import type { Route, Step } from './route.ts'
+import type { Screen, Step } from './route.ts'
 import { FlowMap } from './screens/00-flow-map.tsx'
 import { Step01 } from './screens/01-broker-setup.tsx'
 import { Step02 } from './screens/02-deposit.tsx'
@@ -33,17 +32,16 @@ function subscribe(onChange: () => void): () => void {
   return () => window.removeEventListener('hashchange', onChange)
 }
 
-function useRoute(): Route {
+function useRoute(): Screen {
   return useSyncExternalStore(subscribe, () => parseRoute(window.location.hash))
 }
 
-/** Routes `#/` to the flow map, `#/1` to `#/10` to their step screens and `#/kit` to the kit. */
+/** Routes `#/` to the flow map and `#/1` to `#/10` to their step screens. */
 export function App() {
   const route = useRoute()
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [route])
-  if (route === 'kit') return <KitPage />
   if (route === 0) return <FlowMap />
   const StepScreen = STEP_SCREENS[route]
   return <StepScreen />

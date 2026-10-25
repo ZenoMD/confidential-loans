@@ -37,6 +37,6 @@ const kit: Kit = {
 }
 
 console.error(
-  'This kit holds every demo seed. Paste it into the app; never commit it or put it in a URL.',
+  'This kit holds every demo seed. The dev and preview servers serve it at /demo-kit; never commit it.',
 )
 process.stdout.write(serializeKit(kit))

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { KIT_HREF, parseRoute, screenHref } from './route.ts'
+import { parseRoute, screenHref } from './route.ts'
 import type { Screen } from './route.ts'
 
 const SCREENS: readonly Screen[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -15,12 +15,8 @@ describe('parseRoute', () => {
     assert.equal(parseRoute('#/10'), 10)
   })
 
-  it('opens the kit page', () => {
-    assert.equal(parseRoute(KIT_HREF), 'kit')
-  })
-
   it('falls back to the flow map for any other hash', () => {
-    for (const hash of ['#/0', '#/01', '#/11', '#/-1', '#/1/', '#/abc', '#1', '/1', '#/kit/']) {
+    for (const hash of ['#/0', '#/01', '#/11', '#/-1', '#/1/', '#/abc', '#1', '/1', '#/kit']) {
       assert.equal(parseRoute(hash), 0, hash)
     }
   })

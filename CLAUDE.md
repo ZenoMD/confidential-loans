@@ -13,6 +13,8 @@ Confidential MPTs (XLS-96). `SPEC.md` defines the protocol changes. `design/` ho
 - Ask before opening a pull request. Permission to edit a file is not permission to open a PR.
 - Never commit seeds, keys or ledger state: `frontend/scripts/.env` and `state.json` stay
   gitignored, and seeds never enter the web bundle, a `VITE_*` variable or a URL.
+- The app loads the kit from `/demo-kit`, which the dev and preview servers build from
+  `scripts/.env` (the user chose this over pasting a kit). Do not reintroduce a paste step.
 
 ## Layout
 
