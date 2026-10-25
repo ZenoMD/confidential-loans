@@ -234,14 +234,18 @@ function runOf(view: ViewInputs): Run {
   }
 }
 
-function payout(meta: TransactionMetadata, account: string, issuanceID: string): bigint {
+/**
+ * The assets a withdrawal took out of the vault. The depositor's MPToken cannot tell: rippled omits
+ * `MPTAmount` at 0, so a wallet the deposit emptied has no previous amount in the metadata.
+ */
+function payout(meta: TransactionMetadata, vaultID: string): bigint {
   for (const node of meta.AffectedNodes) {
     if (!('ModifiedNode' in node)) continue
-    const { LedgerEntryType, FinalFields, PreviousFields } = node.ModifiedNode
-    if (LedgerEntryType !== 'MPToken' || FinalFields?.['Account'] !== account) continue
-    if (FinalFields['MPTokenIssuanceID'] !== issuanceID) continue
-    const before = BigInt(String(PreviousFields?.['MPTAmount'] ?? FinalFields['MPTAmount'] ?? 0))
-    return BigInt(String(FinalFields['MPTAmount'] ?? 0)) - before
+    const { LedgerEntryType, LedgerIndex, FinalFields, PreviousFields } = node.ModifiedNode
+    if (LedgerEntryType !== 'Vault' || LedgerIndex !== vaultID) continue
+    const before = PreviousFields?.['AssetsTotal']
+    if (before === undefined) return 0n
+    return BigInt(String(before)) - BigInt(String(FinalFields?.['AssetsTotal'] ?? 0))
   }
   return 0n
 }
@@ -276,7 +280,7 @@ function recordAmount(lens: Lens, keys: Keys, run: Run, logged: LoggedTx): Shown
       return pub(value)
     case 'VaultWithdraw': {
       if (meta.TransactionResult !== 'tesSUCCESS') return undefined
-      return pub(payout(meta, String(tx['Account']), run.kit.mptIssuanceID))
+      return pub(payout(meta, run.kit.vaultID))
     }
     case 'LoanSet': {
       const to = borrower('Counterparty')

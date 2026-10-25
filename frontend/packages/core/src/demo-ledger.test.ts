@@ -480,6 +480,40 @@ it('logs the run in ledger order, with each amount public or encrypted', async (
   demo.close()
 })
 
+it('reads a redemption payout into a wallet the deposit had emptied', async () => {
+  const devnet = await investing()
+  const depositor = address('depositorA')
+  const withdrawal = devnet.log(depositor, {
+    TransactionType: 'VaultWithdraw',
+    VaultID: VAULT,
+    Amount: { mpt_issuance_id: SHARES, value: '1500' },
+  })
+  // As the devnet records it: MPTAmount was absent at 0, so PreviousFields does not name it.
+  withdrawal.meta['AffectedNodes'] = [
+    {
+      ModifiedNode: {
+        LedgerEntryType: 'MPToken',
+        FinalFields: { Account: depositor, MPTokenIssuanceID: ISSUANCE, MPTAmount: '1500' },
+        PreviousFields: {},
+      },
+    },
+    {
+      ModifiedNode: {
+        LedgerEntryType: 'Vault',
+        LedgerIndex: VAULT,
+        FinalFields: { AssetsTotal: '1500', AssetsAvailable: '550' },
+        PreviousFields: { AssetsTotal: '3000', AssetsAvailable: '2050' },
+      },
+    },
+  ]
+  const demo = await openDemo(kit, devnet.ledger)
+  const snapshot = demo.snapshot('outsider')
+  const payout = { visibility: 'public', value: 1500n }
+  assert.deepEqual(snapshot.log.at(-1)?.amount, payout)
+  assert.deepEqual(snapshot.depositors.depositorA.redeemed, payout)
+  demo.close()
+})
+
 it('reports a failed read and recovers on the next ledger', async () => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
