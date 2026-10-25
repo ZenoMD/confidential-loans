@@ -63,13 +63,15 @@ export type Action =
   | { readonly type: 'LoanSetWithdraw' }
   | { readonly type: 'ConfidentialMPTMergeInbox'; readonly borrower: Borrower }
   /**
-   * Pays a loan from the borrower's spending balance: the periodic payment, or exactly the amount
-   * owed, both decrypted with the borrower's key.
+   * Pays a loan from the borrower's spending balance: a regular payment of `amount`, which must be
+   * at least the periodic payment and at most the amount owed, or with `'full'` exactly the amount
+   * owed, decrypted with the borrower's key. A regular payment of the whole amount owed closes the
+   * loan as a full payment does.
    */
   | {
       readonly type: 'ConfidentialLoanPay'
       readonly loanID: string
-      readonly mode: 'installment' | 'full'
+      readonly amount: bigint | 'full'
     }
   /** Settles the whole Lending Balance spending to the vault. */
   | { readonly type: 'LoanBrokerSettle' }
@@ -274,10 +276,11 @@ function cosignGate(s: Snapshot, borrower: Borrower): Gate {
   return termsGate(s, offer.terms)
 }
 
-function payGate(loan: LoanView, mode: 'installment' | 'full'): Gate {
+/** Depends on the loan only: a regular amount's bounds need a decrypt, so its builder checks them. */
+function payGate(loan: LoanView, amount: bigint | 'full'): Gate {
   if (loan.status === 'repaid') return DONE
   if (loan.status === 'defaulted') return closed('tecNO_PERMISSION')
-  if (mode === 'installment' && loan.paymentRemaining <= 1) {
+  if (amount !== 'full' && loan.paymentRemaining <= 1) {
     return blocked('Only the final payment is left: pay in full')
   }
   return open()
@@ -338,7 +341,7 @@ export function gate(s: Snapshot, action: Action): Gate {
     case 'ConfidentialMPTMergeInbox':
       return open()
     case 'ConfidentialLoanPay':
-      return loanGate(s, action.loanID, (loan) => payGate(loan, action.mode))
+      return loanGate(s, action.loanID, (loan) => payGate(loan, action.amount))
     case 'LoanManage':
       return loanGate(s, action.loanID, (loan) => manageGate(s, loan, action.flag))
     case 'VaultWithdraw':

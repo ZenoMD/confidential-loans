@@ -7,11 +7,21 @@ import { useDemo, useSnapshot } from './ledger.tsx'
 import { failureToast, successToast } from './toast.ts'
 import { useToast } from './Toasts.tsx'
 
+interface CtaProps {
+  readonly action: Action
+  readonly label: string
+  readonly small?: boolean
+  /** Why the form's input cannot be sent, when the gate cannot tell without a decrypt. */
+  readonly invalid?: string | undefined
+  /** Opens a form for the action instead of running it; the button still shows its gate. */
+  readonly onOpen?: () => void
+}
+
 /**
  * The primary button that runs one demo action, with its pending, failed, gated and
  * blocked states. Tabs submit only through it.
  */
-export function Cta({ action, label, small }: { action: Action; label: string; small?: boolean }) {
+export function Cta({ action, label, small, invalid, onOpen }: CtaProps) {
   const demo = useDemo()
   const notify = useToast()
   const snapshot = useSnapshot('outsider')
@@ -24,9 +34,14 @@ export function Cta({ action, label, small }: { action: Action; label: string; s
     gate: snapshot === null ? undefined : gate(snapshot, action),
     submitting: snapshot?.submitting,
     failure: failure?.key === key ? failure.text : undefined,
+    invalid,
   })
 
   const run = (): void => {
+    if (onOpen !== undefined) {
+      onOpen()
+      return
+    }
     if (demo === null || running.current) return
     running.current = true
     setFailure(undefined)

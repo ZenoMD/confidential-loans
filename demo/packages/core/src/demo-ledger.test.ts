@@ -520,7 +520,7 @@ it('pays a loan in full with exactly the amount owed', async (t) => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
   t.mock.timers.enable({ apis: ['setTimeout'] })
-  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_1, mode: 'full' }))
+  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_1, amount: 'full' }))
   const [tx] = devnet.submitted
   assert.equal(tx?.['TransactionType'], 'ConfidentialLoanPay')
   assert.equal(tx?.['Account'], address('borrowerA'))
@@ -531,21 +531,37 @@ it('pays a loan in full with exactly the amount owed', async (t) => {
   demo.close()
 })
 
-it('pays an installment of the periodic payment', async (t) => {
+/** Borrower B's loan of 1050 owed, with two payments of at least 525 left. */
+async function twoPaymentLoan(): Promise<FakeDevnet> {
   const devnet = await investing()
   const loan = await addLoan(devnet, 'borrowerB', LOAN_2, 2)
   loan['PaymentRemaining'] = 2
-  const periodic = await encrypt(525n, key('borrowerB').publicKey)
-  loan['BorrowerEncryptedPeriodicPayment'] = periodic
+  loan['BorrowerEncryptedPeriodicPayment'] = await encrypt(525n, key('borrowerB').publicKey)
+  return devnet
+}
+
+it('pays a regular payment of any amount from the periodic payment up', async (t) => {
+  const devnet = await twoPaymentLoan()
   const demo = await openDemo(kit, devnet.ledger)
   t.mock.timers.enable({ apis: ['setTimeout'] })
-  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_2, mode: 'installment' }))
+  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_2, amount: 700n }))
   const [tx] = devnet.submitted
   assert.equal(tx?.['Account'], address('borrowerB'))
   assert.equal(tx?.['Flags'] ?? 0, 0)
   assert.equal(typeof tx?.['PeriodicPaymentCommitment'], 'string')
   const paid = String(tx?.['DestinationEncryptedAmount'])
-  assert.equal(await crypto.decryptAmount(paid, key('brokerA').privateKey, 4000n), 525n)
+  assert.equal(await crypto.decryptAmount(paid, key('brokerA').privateKey, 4000n), 700n)
+  demo.close()
+})
+
+it('submits nothing for a regular payment below the periodic payment', async () => {
+  const devnet = await twoPaymentLoan()
+  const demo = await openDemo(kit, devnet.ledger)
+  await assert.rejects(demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_2, amount: 500n }), {
+    code: 'buildFailed',
+    message: /between the Periodic Payment 525 and the Amount Owed 1050/,
+  })
+  assert.equal(devnet.submitted.length, 0)
   demo.close()
 })
 
@@ -611,7 +627,7 @@ it('submits nothing when the proof cannot be built', async () => {
   token['ConfidentialBalanceSpending'] = await encrypt(10n, key('borrowerA').publicKey)
   const demo = await openDemo(kit, devnet.ledger)
   await assert.rejects(
-    demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_1, mode: 'full' }),
+    demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_1, amount: 'full' }),
     (error) => {
       assert.ok(error instanceof ActionFailed)
       assert.equal(error.code, 'buildFailed')
@@ -716,12 +732,12 @@ it('gate opens an offer after a draw, with valid terms that end before redemptio
   })
 })
 
-it('gate keeps installments for loans with more than one payment left', async () => {
+it('gate keeps regular payments for loans with more than one payment left', async () => {
   const s = await snapshotAt(SUBSCRIPTION + 40)
-  const pay = (mode: 'installment' | 'full') =>
-    ({ type: 'ConfidentialLoanPay', loanID: LOAN_1, mode }) as const
+  const pay = (amount: bigint | 'full') =>
+    ({ type: 'ConfidentialLoanPay', loanID: LOAN_1, amount }) as const
   assert.deepEqual(gate(s, pay('full')), { open: true })
-  assert.deepEqual(gate(s, pay('installment')), {
+  assert.deepEqual(gate(s, pay(525n)), {
     open: false,
     reason: 'blocked',
     why: 'Only the final payment is left: pay in full',

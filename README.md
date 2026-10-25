@@ -1,6 +1,6 @@
 # Confidential Loans
 
-- [The XLS-style spec](https://zeno-confidential-loans.pages.dev/#/spec)
+- [XLS-style spec](https://zeno-confidential-loans.pages.dev/#/spec)
 - [Public demo app](https://zeno-confidential-loans.pages.dev/)
 - [Rippled fork implementing the spec](https://github.com/ZenoMD/rippled/tree/confidential-loans)
 - [xrpl.js fork](https://github.com/ZenoMD/xrpl.js/tree/confidential-loans)

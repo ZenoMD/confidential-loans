@@ -190,7 +190,7 @@ class ActionRunner implements Actions {
         )
       }
       case 'ConfidentialLoanPay':
-        return this.payLoan(action.loanID, action.mode)
+        return this.payLoan(action.loanID, action.amount)
       case 'LoanBrokerSettle':
         return this.settle()
       case 'LoanManage':
@@ -281,24 +281,29 @@ class ActionRunner implements Actions {
     return submitBlob(this.client, cosigned)
   }
 
-  private async payLoan(loanID: string, mode: 'installment' | 'full'): Promise<string> {
+  /**
+   * xrpl checks a regular amount against the decrypted terms, and makes one equal to the amount
+   * owed a full payment.
+   */
+  private async payLoan(loanID: string, amount: bigint | 'full'): Promise<string> {
     const entry = this.loan(loanID)
     const borrower = this.borrowerOf(entry.Borrower)
     const key = this.keys[borrower]
     const owed = await this.decrypt(entry.BorrowerEncryptedAmountOwed, key, 'The amount owed')
-    const periodic =
-      mode === 'full'
-        ? owed
-        : await this.decrypt(entry.BorrowerEncryptedPeriodicPayment, key, 'The periodic payment')
-    const params = {
-      account: this.wallets[borrower].address,
-      loanID,
-      amount: periodic,
-      amountOwed: owed,
-      periodicPayment: periodic,
-      fullPayment: mode === 'full',
-      borrowerKeypair: key,
-    }
+    const base = { account: this.wallets[borrower].address, loanID, amountOwed: owed }
+    const params =
+      amount === 'full'
+        ? { ...base, amount: owed, fullPayment: true, borrowerKeypair: key }
+        : {
+            ...base,
+            amount,
+            periodicPayment: await this.decrypt(
+              entry.BorrowerEncryptedPeriodicPayment,
+              key,
+              'The periodic payment',
+            ),
+            borrowerKeypair: key,
+          }
     return this.send(
       build(() => prepareConfidentialLoanPay(this.client, params)),
       this.wallets[borrower],

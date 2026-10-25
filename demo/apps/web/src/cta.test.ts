@@ -48,6 +48,14 @@ describe('ctaView', () => {
     })
   })
 
+  it('disables an open gate while the input is invalid, saying why', () => {
+    assert.deepEqual(view(OPEN, { invalid: 'At least $525' }), {
+      text: 'Draw',
+      disabled: true,
+      line: { kind: 'note', text: 'At least $525' },
+    })
+  })
+
   it('says what must happen first', () => {
     assert.deepEqual(view({ open: false, reason: 'blocked', why: 'Create the LoanBroker first' }), {
       text: 'Draw',

@@ -26,6 +26,8 @@ export interface CtaInput {
   readonly submitting: Action | undefined
   /** `failureText` of this action's last rejection, cleared on the next click. */
   readonly failure?: string | undefined
+  /** Why the form's input cannot be sent, when the gate cannot tell without a decrypt. */
+  readonly invalid?: string | undefined
 }
 
 /**
@@ -69,20 +71,25 @@ function gateLine(gate: Gate): CtaLine | undefined {
 
 /**
  * Decides what a CTA shows: Submitting while its action runs, Done once it has run, and
- * otherwise its label, enabled only when the gate is open and nothing else is running.
+ * otherwise its label, enabled only when the gate is open, the input is valid and nothing else is
+ * running.
  *
- * @param input - The label, the action, its gate and what is in flight or failed.
+ * @param input - The label, the action, its gate, the input's problem and what is in flight or
+ *   failed.
  * @returns The button text, whether it is disabled, and the line under it.
  */
 export function ctaView(input: CtaInput): CtaView {
-  const { label, action, gate, submitting, failure } = input
+  const { label, action, gate, submitting, failure, invalid } = input
   if (submitting !== undefined && actionKey(submitting) === actionKey(action)) {
     return { text: 'Submitting', disabled: true, line: undefined }
   }
   if (gate === undefined) return { text: label, disabled: true, line: undefined }
   if (!gate.open && gate.reason === 'done') return { text: 'Done', disabled: true, line: undefined }
-  const disabled = !gate.open || submitting !== undefined
-  const line: CtaLine | undefined =
-    failure === undefined ? gateLine(gate) : { kind: 'alert', text: failure }
+  const disabled = !gate.open || invalid !== undefined || submitting !== undefined
+  if (failure !== undefined) {
+    return { text: label, disabled, line: { kind: 'alert', text: failure } }
+  }
+  const line =
+    gateLine(gate) ?? (invalid === undefined ? undefined : { kind: 'note', text: invalid })
   return { text: label, disabled, line }
 }
