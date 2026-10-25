@@ -45,3 +45,25 @@ ledger IDs in `frontend/scripts/state.json`; git ignores both.
 
 Step 1 of the app creates the confidential LoanBroker, so no script does. The kit holds every
 demo seed: never commit it, and never put it in the bundle, a `VITE_*` variable or a URL.
+
+## Run the demo
+
+Run from `frontend/` with Node 22. Steps 1 to 8 need a fresh vault that is still taking deposits.
+Setup creates the vault last, so its 300 s deposit window opens once the rest of setup is done.
+
+```sh
+pnpm install --frozen-lockfile --offline
+node scripts/setup.ts
+node scripts/export-kit.ts > /path/outside/the/repo/kit.json
+pnpm dev
+```
+
+1. Open http://localhost:5173/#/kit.
+2. Paste the contents of `kit.json` and save it. The app stores the kit in this tab's
+   `sessionStorage` only.
+3. Open `#/` for the flow map, or go to `#/1` and work through to step 10.
+
+The defaults (300 s Subscription, 600 s Investment) suit a demo at human pace. For a quick run,
+pass `--subscription 120 --investment 300` to `setup.ts`. Once a vault reaches its Redemption
+phase, run setup and export again to start a new run. The kit holds every demo seed, so keep it
+outside the repo and delete it after the demo.
