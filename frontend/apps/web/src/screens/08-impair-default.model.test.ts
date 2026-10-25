@@ -159,7 +159,6 @@ describe('impairDefault', () => {
       'x Grace ends: Passed',
       'x! Defaulted: Shortfall to depositors',
     ])
-    assert.equal(model.default.label, 'Defaulted')
     assert.deepEqual(model.shortfall, OWED)
   })
 

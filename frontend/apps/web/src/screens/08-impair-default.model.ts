@@ -160,7 +160,7 @@ export function impairDefault(s: Snapshot): ImpairDefaultModel {
     status: { text: STATUS[stage], tone: stage === 'defaulted' ? 'loss' : 'mute' },
     timeline: timeline(stage, wasImpaired(s)),
     impair: { action: IMPAIR, label: 'Impair loan B' },
-    default: { action: DEFAULT, label: stage === 'defaulted' ? 'Defaulted' : 'Default loan B' },
+    default: { action: DEFAULT, label: 'Default loan B' },
     shortfall: stage === 'defaulted' ? loan?.amountOwed : undefined,
   }
 }
