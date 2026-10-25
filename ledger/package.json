@@ -1,0 +1,33 @@
+{
+  "name": "@confidential-loans/ledger",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#lib/*": "./lib/*.ts"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.ts",
+    "signing-test": "node tests/signing-matrix.ts",
+    "create-loans": "node app/setup.ts",
+    "start": "node app/server.ts",
+    "dry-run": "node app/server.ts --dry-run",
+    "verify-results": "node tests/verify-results.ts",
+    "reconnect-test": "node tests/reconnect.ts",
+    "check": "tsc && oxlint && oxfmt --check"
+  },
+  "dependencies": {
+    "@ledgerhq/hw-app-xrp": "6.38.0",
+    "@ledgerhq/hw-transport-node-hid": "6.33.5",
+    "xrpl": "file:../demo/vendor/xrpl-5.3.0.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "typescript": "7.0.2"
+  },
+  "volta": {
+    "node": "22.23.1"
+  },
+  "packageManager": "pnpm@11.3.0"
+}

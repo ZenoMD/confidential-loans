@@ -1,0 +1,9 @@
+minimumReleaseAge: 1440
+# The xrpl.js fork in demo/vendor, as the demo uses it; xrpl depends on these two patched packages.
+overrides:
+  '@xrplf/mpt-crypto': file:../demo/vendor/xrplf-mpt-crypto-0.1.1.tgz
+  ripple-binary-codec: file:../demo/vendor/ripple-binary-codec-2.11.0.tgz
+# node-hid talks to the Ledger over USB and needs its native build.
+allowBuilds:
+  node-hid: true
+  usb: false

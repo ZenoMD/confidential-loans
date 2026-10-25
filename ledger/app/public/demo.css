@@ -1,0 +1,771 @@
+/* Copied unchanged from demo/apps/web/src; re-copy to resync. */
+
+/* ---- tokens.css ---- */
+/* Canvas tokens from design/canvas/project/*.dc.html. The canvas is dark only. */
+:root {
+  color-scheme: dark;
+
+  --canvas: #000000;
+  --surface-deep: #0a0a0a;
+  --surface-elevated: #16181a;
+  --ink: #ffffff;
+  --mute: rgba(255, 255, 255, 0.72);
+  --dim: rgba(255, 255, 255, 0.56);
+  --rule: rgba(255, 255, 255, 0.12);
+  --rule-strong: rgba(255, 255, 255, 0.32);
+  --key: #627eea;
+  --bar: #5c5e60;
+  --loss: #e5484d;
+  --stone: #8d969e;
+  --progress-done: rgba(255, 255, 255, 0.48);
+  --progress-upcoming: rgba(255, 255, 255, 0.16);
+
+  --font-display: 'General Sans', 'Aeonik Pro', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --type-display-lg: 500 48px/1.21 var(--font-display);
+  --tracking-display-lg: -0.48px;
+  --type-role: 500 32px/1.15 var(--font-display);
+  --tracking-role: -0.32px;
+  --type-brand: 500 22px/1 var(--font-display);
+  --tracking-brand: -0.3px;
+  --type-heading-sm: 500 20px/1.4 var(--font-display);
+  --type-amount: 500 20px/1.2 var(--font-body);
+  --type-body-lg: 400 18px/1.56 var(--font-body);
+  --type-button: 600 16px/1 var(--font-body);
+  --tracking-ui: 0.24px;
+  --type-step-name: 500 16px/1.3 var(--font-body);
+  --type-cell: 500 15px/1.3 var(--font-body);
+  --type-body-sm: 400 14px/1.43 var(--font-body);
+  --type-control: 500 14px/1 var(--font-body);
+  --type-control-on: 600 14px/1 var(--font-body);
+  --type-caption: 400 13px/1.4 var(--font-body);
+  --type-nav: 500 13px/1 var(--font-body);
+  --type-nav-current: 600 13px/1.3 var(--font-body);
+  --type-pill: 500 13px/1 var(--font-body);
+  --type-hash: 400 13px/1 var(--font-mono);
+  --type-card-number: 600 12px/1 var(--font-body);
+  --type-card-title: 500 14px/1.25 var(--font-display);
+  --type-card-mono: 400 11px/1.3 var(--font-mono);
+
+  --gutter: 48px;
+  /* The main column, the column gap and the role column: 820 + 64 + 320, rounded. */
+  --content-width: 1200px;
+  --header-top: 20px;
+  --nav-top: 28px;
+  --page-top: 40px;
+  --page-bottom: 64px;
+  --page-row-gap: 48px;
+  --page-column-gap: 64px;
+  --main-gap: 48px;
+  --aside-gap: 24px;
+  --radius-pill: 9999px;
+  --radius-card: 12px;
+  --radius-bar: 2px;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 16px;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+input::placeholder {
+  color: var(--dim);
+  opacity: 1;
+}
+
+/* ---- Page.css ---- */
+.page {
+  min-height: 100vh;
+}
+
+/* The header's rows line up with the body's column, centered on a wide screen. */
+.page-top,
+.page-row {
+  width: 100%;
+  max-width: var(--content-width);
+  margin-inline: auto;
+}
+
+/* The aside comes first in the DOM, so it is read first and stacks on top when the row wraps. */
+.page-body {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--page-row-gap) var(--page-column-gap);
+  max-width: calc(var(--content-width) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding: var(--page-top) var(--gutter) var(--page-bottom);
+}
+
+.page-aside {
+  flex: 1 1 280px;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--aside-gap);
+}
+
+.page-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  max-width: 820px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--main-gap);
+}
+
+.page-notice {
+  margin: 0;
+  font: var(--type-body-lg);
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: var(--header-top) var(--gutter) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.page-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 32px;
+}
+
+.page-brand {
+  font: var(--type-brand);
+  letter-spacing: var(--tracking-brand);
+}
+
+/* Pinned to the bottom right, under the toasts, and quiet: small, dim, no button chrome. */
+.page-phase {
+  position: fixed;
+  right: var(--gutter);
+  bottom: 12px;
+  z-index: 5;
+  max-width: calc(100% - 2 * var(--gutter));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.85);
+  font: var(--type-caption);
+  color: var(--dim);
+}
+
+.page-phase-name {
+  color: var(--mute);
+  font-weight: 500;
+}
+
+.page-clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.page-clear:hover {
+  color: var(--ink);
+}
+
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+/* Lines the first tab's text up with the brand; a phone has no gutter to spare for it. */
+@media (min-width: 641px) {
+  .page-tabs {
+    margin-left: -16px;
+  }
+}
+
+.page-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 2px solid transparent;
+  color: var(--mute);
+  font: var(--type-control);
+}
+
+.page-tabs a[aria-current='page'] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+  font: var(--type-control-on);
+}
+
+.page-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.page-lensbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+  padding-bottom: 8px;
+}
+
+/* ---- Tab.css ---- */
+/* Shared by the three tabs: sections, stat rows, fields, cards and action rows. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section-heading {
+  margin: 0;
+  font: var(--type-heading-sm);
+}
+
+.section-note {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 48px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 24px;
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px 32px;
+}
+
+.section > .toggle {
+  align-self: flex-start;
+}
+
+.fields > .field {
+  flex: 1 1 160px;
+}
+
+.field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.field-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.field-line {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.field-unit {
+  font: var(--type-amount);
+  color: var(--dim);
+}
+
+.field-unit-select {
+  flex: none;
+  height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--mute);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+.field-unit-select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.field-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: var(--type-amount);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  color: var(--ink);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: var(--radius-card);
+  background: var(--surface-elevated);
+}
+
+.card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+
+.card-title {
+  margin: 0;
+  font: var(--type-heading-sm);
+}
+
+.card-meta {
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.card-status {
+  margin-left: auto;
+  font: var(--type-control-on);
+  color: var(--mute);
+}
+
+.card-status[data-troubled='true'] {
+  color: var(--loss);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 16px;
+  }
+}
+
+.stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  font: var(--type-body-sm);
+  color: var(--dim);
+}
+
+.stage-mark {
+  flex: none;
+  width: 64px;
+  font: var(--type-control-on);
+  line-height: inherit;
+}
+
+.stage[data-state='done'] {
+  color: var(--mute);
+}
+
+.stage[data-state='running'] {
+  color: var(--ink);
+}
+
+.stage[data-state='failed'] {
+  color: var(--loss);
+}
+
+.modal {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 32px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--surface-elevated);
+  color: var(--ink);
+}
+
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 20px;
+  }
+}
+
+.tx-list {
+  max-height: 168px;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tx-list a {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font: var(--type-hash);
+  color: var(--mute);
+}
+
+.tx-list a:hover {
+  color: var(--ink);
+}
+
+.tx-type {
+  color: var(--ink);
+}
+
+/* ---- Role.css ---- */
+.role {
+  width: 320px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  text-align: right;
+  color: var(--ink);
+}
+
+.role-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.role-who {
+  margin: 0;
+  font: var(--type-role);
+  letter-spacing: var(--tracking-role);
+}
+
+.role-action {
+  margin: 0;
+  font: var(--type-body-lg);
+  color: var(--mute);
+}
+
+/* ---- Address.css ---- */
+.address {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font: var(--type-hash);
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.address:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.address svg {
+  flex: none;
+}
+
+/* ---- Cta.css ---- */
+.cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cta-button {
+  min-height: 52px;
+  padding: 0 28px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--canvas);
+  font: var(--type-button);
+  letter-spacing: var(--tracking-ui);
+  cursor: pointer;
+}
+
+.cta[data-size='small'] .cta-button {
+  min-height: 40px;
+  padding: 0 18px;
+  font: var(--type-control-on);
+}
+
+.cta-button:disabled {
+  border-color: var(--rule-strong);
+  background: transparent;
+  color: var(--dim);
+  cursor: not-allowed;
+}
+
+.cta-line {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.cta-line[data-kind='alert'] {
+  color: var(--loss);
+}
+
+.cta-line a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---- Value.css ---- */
+.value {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  outline-offset: 4px;
+}
+
+.value-label {
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.value-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.value-amount {
+  font: var(--type-amount);
+  color: var(--ink);
+}
+
+.value-amount[data-tone='key'] {
+  color: var(--key);
+}
+
+.value-amount[data-tone='dim'] {
+  color: var(--dim);
+}
+
+.value-bar {
+  display: block;
+  width: 96px;
+  height: 20px;
+  border-radius: var(--radius-bar);
+  background: var(--bar);
+}
+
+.privacy-icon {
+  flex: none;
+  color: var(--dim);
+}
+
+.privacy-icon[data-kind='decrypted'] {
+  color: var(--key);
+}
+
+.privacy-icon[data-kind='locked'] {
+  color: var(--stone);
+}
+
+.value-note {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  padding: 10px 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--surface-elevated);
+  font: var(--type-caption);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  display: none;
+  pointer-events: none;
+}
+
+.value:hover .value-note,
+.value:focus-visible .value-note {
+  display: block;
+}
+
+.value:focus-visible {
+  outline: 2px solid var(--ink);
+}
+
+/* ---- Toasts.css ---- */
+.toasts {
+  position: fixed;
+  right: var(--gutter);
+  /* Clears the phase bar in the same corner. */
+  bottom: 64px;
+  z-index: 10;
+  width: min(360px, calc(100% - 32px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--key);
+  border-radius: var(--radius-card);
+  background: var(--surface-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.toast[data-ok='false'] {
+  border-left-color: var(--loss);
+}
+
+.toast-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toast-title {
+  font: var(--type-control-on);
+  line-height: 1.3;
+}
+
+.toast-detail {
+  font: var(--type-hash);
+  color: var(--key);
+}
+
+.toast[data-ok='false'] .toast-detail {
+  color: var(--loss);
+}
+
+.toast-link {
+  font: var(--type-hash);
+  color: var(--mute);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.toast-link:hover {
+  color: var(--ink);
+}
+
+.toast-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--mute);
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  color: var(--ink);
+}

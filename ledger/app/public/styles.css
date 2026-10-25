@@ -1,0 +1,109 @@
+/* Only what the Ledger page adds to the demo's styles in demo.css. */
+
+.page-tabs a[aria-disabled='true'] {
+  cursor: default;
+}
+
+.page-poc {
+  margin-left: auto;
+  font: var(--type-caption);
+  color: var(--dim);
+}
+
+.page-mode {
+  padding: 4px 10px;
+  border: 1px solid var(--loss);
+  border-radius: var(--radius-pill);
+  color: var(--loss);
+  font: var(--type-pill);
+}
+
+.signer {
+  width: 320px;
+  max-width: 100%;
+  gap: 16px;
+}
+
+.signer-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.signer-name {
+  font: var(--type-step-name);
+}
+
+.signer-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font: var(--type-caption);
+  color: var(--mute);
+}
+
+.signer-state::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--stone);
+}
+
+.signer-state[data-on='true']::before {
+  background: var(--key);
+}
+
+.signer-list {
+  margin: 0;
+  padding-left: 18px;
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.cta-button .device-icon {
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+
+.card-status[data-gone='true'] {
+  color: var(--dim);
+}
+
+.review-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 20px;
+  margin: 0;
+  font: var(--type-body-sm);
+}
+
+.review-facts dt {
+  color: var(--mute);
+}
+
+.review-facts dd {
+  margin: 0;
+  font: var(--type-hash);
+  line-height: 1.43;
+  overflow-wrap: anywhere;
+}
+
+.review-device {
+  padding: 16px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-card);
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.review-device strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.review-result a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

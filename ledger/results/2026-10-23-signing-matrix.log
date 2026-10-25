@@ -1,0 +1,22 @@
+device app: XRP 2.8.2
+Nothing below is submitted. Approve any review that appears; note what the screen says.
+
+>> MPTokenAuthorize: watch the device
+   refused: 0x680b Ledger device: UNKNOWN_ERROR (0x680b) after 0.2s
+>> VaultDeposit (MPT amount): watch the device
+   refused: 0x680b Ledger device: UNKNOWN_ERROR (0x680b) after 0.3s
+>> LoanPay (MPT amount): watch the device
+   refused: 0x680b Ledger device: UNKNOWN_ERROR (0x680b) after 0.2s
+>> ConfidentialMPTMergeInbox: watch the device
+   refused: 0x680b Ledger device: UNKNOWN_ERROR (0x680b) after 0.3s
+>> VaultCreate (MPT asset): watch the device
+   refused: 0x680b Ledger device: UNKNOWN_ERROR (0x680b) after 0.4s
+>> LoanBrokerSet (VaultID only): watch the device
+   refused: 0x6985 Ledger device: Condition of use not satisfied (denied by the user?) (0x6985) after 0.3s
+>> LoanSet (first signer): watch the device
+For LoanSet transaction the auto calculated Fee accounts for total number of signers the counterparty has to avoid transaction failure.
+   refused: 0x680b Ledger device: UNKNOWN_ERROR (0x680b) after 0.4s
+>> LoanManage (impair): watch the device
+   refused: 0x6985 Ledger device: Condition of use not satisfied (denied by the user?) (0x6985) after 0.3s
+>> LoanDelete: watch the device
+   refused: 0x6985 Ledger device: Condition of use not satisfied (denied by the user?) (0x6985) after 0.3s

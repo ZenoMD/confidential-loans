@@ -1,0 +1,5 @@
+device app: XRP 2.8.2
+ledger account: https://devnet.xrpl.org/accounts/rHUSjy2T64P3J78Lo4bxbyJKQHwMYZJCyH
+2. Sign a 1 XRP payment on the device: review it and approve
+  signed on device; TxnSignature 304402205FAE386F...
+ok  Payment: tesSUCCESS https://devnet.xrpl.org/transactions/FFA903D791809ADEA6B310447C594ECF7BC1441125270574584FC091A9001D5C

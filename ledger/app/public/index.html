@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zeno Confidential Loans</title>
+    <link rel="stylesheet" href="/demo.css" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="page-header">
+        <div class="page-top">
+          <span class="page-brand">Zeno Confidential Loans</span>
+          <span class="page-poc">Ledger signing proof of concept · public Devnet</span>
+          <span class="page-mode" id="mode" hidden>Dry run: software key</span>
+        </div>
+        <div class="page-row">
+          <nav class="page-tabs" aria-label="Actors">
+            <a aria-disabled="true"
+              ><svg data-icon="depositor" width="20" height="20"></svg>Depositor</a
+            >
+            <a aria-current="page"><svg data-icon="broker" width="20" height="20"></svg>Broker</a>
+            <a aria-disabled="true"
+              ><svg data-icon="borrower" width="20" height="20"></svg>Borrower</a
+            >
+          </nav>
+        </div>
+      </header>
+      <div class="page-body">
+        <aside class="page-aside" aria-label="Role">
+          <div class="role">
+            <svg data-icon="broker" data-size="64" width="64" height="64"></svg>
+            <div class="role-text">
+              <h1 class="role-who">Broker</h1>
+              <p class="role-action">Runs the vault's LoanBroker</p>
+              <a
+                class="address"
+                id="owner"
+                target="_blank"
+                rel="noreferrer"
+                title="Open in the explorer"
+              ></a>
+            </div>
+          </div>
+          <section class="card signer" aria-labelledby="signer-name">
+            <div class="signer-head">
+              <svg data-icon="device" width="20" height="20"></svg>
+              <span class="signer-name" id="signer-name">Ledger</span>
+              <span class="signer-state" id="signer-state" data-on="false">Not connected</span>
+            </div>
+            <ul class="signer-list">
+              <li>Impair, default and delete loans</li>
+              <li>The broker's master key stays on the device</li>
+            </ul>
+            <div class="cta" data-size="small">
+              <button type="button" class="cta-button" id="connect">Connect Ledger</button>
+              <p class="cta-line" id="connect-line" hidden></p>
+            </div>
+          </section>
+        </aside>
+        <main class="page-main">
+          <p class="page-notice" id="notice">Connecting to the devnet</p>
+          <section class="section" aria-labelledby="vault" id="vault-section" hidden>
+            <h2 id="vault" class="section-heading">Vault</h2>
+            <div class="stats" id="vault-stats"></div>
+          </section>
+          <section class="section" aria-labelledby="loans" id="loans-section" hidden>
+            <h2 id="loans" class="section-heading">Loans</h2>
+            <div class="section" id="loan-cards"></div>
+          </section>
+        </main>
+      </div>
+      <footer class="page-phase">
+        <span id="network"></span>
+        <span id="ledger-index"></span>
+      </footer>
+      <ol class="toasts" aria-live="polite" id="toasts"></ol>
+      <dialog class="modal" id="review" aria-labelledby="review-title">
+        <div class="section">
+          <h2 id="review-title" class="section-heading">Sign on your Ledger</h2>
+          <dl class="review-facts" id="review-facts"></dl>
+          <p class="review-device" id="review-device"></p>
+          <ol class="stages" id="review-stages"></ol>
+          <p class="cta-line review-result" id="review-result" hidden></p>
+          <div class="actions">
+            <button type="button" class="cta-button" id="review-retry" hidden>Try again</button>
+            <button type="button" class="pill" id="review-close">Close</button>
+          </div>
+        </div>
+      </dialog>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

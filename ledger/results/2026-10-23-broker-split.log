@@ -1,0 +1,58 @@
+broker account (master key on the Ledger): https://devnet.xrpl.org/accounts/rHUSjy2T64P3J78Lo4bxbyJKQHwMYZJCyH
+1. Ledger delegates routine signing to regular key rKxURAC4zqrSJ3iVWyPifAeUbrUzYmubpA (clear signing)
+>> SetRegularKey: review on the Ledger and approve
+ok  SetRegularKey: tesSUCCESS https://devnet.xrpl.org/transactions/F8827D02CF98D04C9EC8BE3216832D451F77EF45F63DBDAF1B9105F2A413D30A
+2. Regular key sets up a vault and broker owned by the Ledger account
+ok  MPTokenAuthorize ledger account: tesSUCCESS https://devnet.xrpl.org/transactions/69A9040D1A27E5CEB428E3DD08986BFDB8DF679C09F5689DDBF0E83E820FF9C1
+ok  Payment issuer->ledger account: tesSUCCESS https://devnet.xrpl.org/transactions/0E2152A79A577FE948EA4A465EAFCE0273AAE7F8076597AC7B81184DE9AE5E5F
+ok  VaultCreate: tesSUCCESS https://devnet.xrpl.org/transactions/49C15468EF8FD90E4E901025AA823B3861001B780CB982A736EA4F1904BB01E9
+ok  LoanBrokerSet: tesSUCCESS https://devnet.xrpl.org/transactions/6096D9F0361D71A8FDD20545561DEF8DE06DDB925DF19E09673545724FD33301
+ok  LoanBrokerCoverDeposit: tesSUCCESS https://devnet.xrpl.org/transactions/7BED3C8228B1CE636D3EFDF9441CE13BDB7F3F72F20278B8FF3229F3E11B739E
+ok  VaultDeposit depositorA: tesSUCCESS https://devnet.xrpl.org/transactions/DCD5F6CF81B391AACAFA7CAE162BEA918DC1A8B6D2CEB788B449B10037B57E2B
+waiting for Investment phase at 2026-10-23T02:12:02.000Z
+3. Regular key and borrower sign a 2-payment loan (the Ledger cannot sign LoanSet)
+For LoanSet transaction the auto calculated Fee accounts for total number of signers the counterparty has to avoid transaction failure.
+ok  LoanSet: tesSUCCESS https://devnet.xrpl.org/transactions/4B0300623A36EED67F039E3A75E8C16E639E801C37E02625E880F750FC9EB240
+  loan: Flags=0 NextPaymentDueDate=846036793 PaymentRemaining=2 TotalValueOutstanding=50000015
+waiting for first payment overdue at 2026-10-23T02:13:14.000Z
+4. The Ledger impairs the overdue loan (blind signing)
+>> LoanManage impair: review on the Ledger and approve
+   LoanManage impair failed: 0x5515 Ledger device: Locked device (0x5515)
+node_modules/@ledgerhq/errors/src/index.ts:428
+      return new LockedDeviceError(message);
+             ^
+
+LockedDeviceError: Ledger device: Locked device (0x5515)
+    at new TransportStatusError (node_modules/@ledgerhq/errors/src/index.ts:428:14)
+    at TransportNodeHid.send (node_modules/@ledgerhq/hw-transport/src/Transport.ts:277:13)
+    at async Xrp.signTransaction (node_modules/@ledgerhq/hw-app-xrp/src/Xrp.ts:173:18)
+    at async Xrp.signTransaction (node_modules/@ledgerhq/hw-transport/src/Transport.ts:406:16)
+    at async ledgerSign (<prep-workspace>/lib/ledger.ts:100:21)
+    at async onDevice (<prep-workspace>/examples/32-ledger-loan-broker/main.ts:24:24)
+    at async <anonymous> (<prep-workspace>/examples/32-ledger-loan-broker/main.ts:157:5)
+    at async withClient (<prep-workspace>/lib/network.ts:24:12)
+    at async <anonymous> (<prep-workspace>/examples/32-ledger-loan-broker/main.ts:57:3) {
+  statusCode: 21781,
+  statusText: 'LOCKED_DEVICE'
+}
+
+Node.js v22.23.1
+--- resumed after unlocking the device ---
+broker account (master key on the Ledger): https://devnet.xrpl.org/accounts/rHUSjy2T64P3J78Lo4bxbyJKQHwMYZJCyH
+Resuming with the loan saved in fixtures/devnet-state.json
+  loan: Flags=0 NextPaymentDueDate=846036793 PaymentRemaining=2 TotalValueOutstanding=50000015
+waiting for first payment overdue at 2026-10-23T02:13:14.000Z
+4. The Ledger impairs the overdue loan (blind signing)
+>> LoanManage impair: review on the Ledger and approve
+ok  LoanManage impair: tesSUCCESS https://devnet.xrpl.org/transactions/54BE5F2F11B39FC1D3176AADF3A2BD682E33245EE2658F16E021BA69E8FA4558
+  loan: Flags=131072 NextPaymentDueDate=846036793 PaymentRemaining=2 TotalValueOutstanding=50000015
+  vault: AssetsTotal=100000000 LossUnrealized=50000000
+waiting for grace period end at 2026-10-23T02:14:14.000Z
+5. The Ledger defaults the loan, then deletes it (blind signing)
+>> LoanManage default: review on the Ledger and approve
+ok  LoanManage default: tesSUCCESS https://devnet.xrpl.org/transactions/D952476D8DD1C1483D8A39FE105E87C514570669399A474F54B2A0556BB326FA
+  vault: AssetsTotal=52500000 AssetsAvailable=52500000 LossUnrealized=-
+  broker: CoverAvailable=7500000 DebtTotal=-
+>> LoanDelete: review on the Ledger and approve
+ok  LoanDelete: tesSUCCESS https://devnet.xrpl.org/transactions/E10280FA4D11AC68C87573874F4CE2B5F0BF585C9176318C76D69EF34F5D77D7
+  loan: deleted

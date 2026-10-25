@@ -13,6 +13,13 @@ The submission has a number of components:
     - RPC: https://rpc.xrpl-confidential-loans.zeno.md
     - explorer : https://custom.xrpl.org/xrpl-confidential-loans.zeno.md:443
 
+## Ledger hardware signing (proof of concept)
+
+[`ledger/`](./ledger/README.md), on the `test/ledger` branch: a Ledger Nano S Plus holds the loan
+broker's master key and signs impair, default and delete. Verified on the public XRPL Devnet with
+non-confidential loans; it is not merged into the demo app and has not run on the team devnet. Its
+README has the device results, the signing test suite behind them, and the integration steps.
+
 ## Run the demo
 
 You can use a [public deployment of the demo](https://zeno-confidential-loans.pages.dev/)
