@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Value</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap">
+<style>
+:root{--ink:#ffffff;--mute:rgba(255,255,255,0.72);--dim:rgba(255,255,255,0.56);--rule:rgba(255,255,255,0.12);--rule-strong:rgba(255,255,255,0.32);--key:#627eea;--bar:#5c5e60;--font-display:'General Sans','Aeonik Pro','Inter',system-ui,sans-serif;--font-body:'Inter',system-ui,-apple-system,sans-serif;--type-body-sm:400 14px/1.43 var(--font-body)}
+body{margin:0;background:#000000}
+a{color:#ffffff;text-decoration:none}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="display: inline-flex; flex-direction: column; gap: 4px; background: #000000; font-family: var(--font-body)">
+  <sc-if value="{{hasLabel}}" hint-placeholder-val="{{ true }}"><span style="font: var(--type-body-sm); color: var(--mute)">{{label}}</span></sc-if>
+  <sc-if value="{{isRedacted}}" hint-placeholder-val="{{ false }}"><span role="img" aria-label="Encrypted amount" style="display: block; width: 96px; height: 20px; border-radius: 2px; background: var(--bar)"></span></sc-if>
+  <sc-if value="{{isDecrypted}}" hint-placeholder-val="{{ false }}"><span style="font: 500 20px/1.2 var(--font-body); color: var(--key)">${{amount}}</span></sc-if>
+  <sc-if value="{{isPublic}}" hint-placeholder-val="{{ true }}"><span style="font: 500 20px/1.2 var(--font-body); color: var(--ink)">${{amount}}</span></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"label":{"editor":"text","default":"Principal"},"amount":{"editor":"text","default":"[principal A]"},"visibility":{"editor":"enum","default":"public","options":["public","decrypted","redacted"]},"$preview":{"width":240,"height":64}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const v = this.props.visibility ?? 'public';
+    const label = this.props.label ?? '';
+    return {
+      label,
+      hasLabel: label !== '',
+      amount: this.props.amount ?? '',
+      isRedacted: v === 'redacted',
+      isDecrypted: v === 'decrypted',
+      isPublic: v !== 'redacted' && v !== 'decrypted'
+    };
+  }
+}
+</script>
+</body>
+</html>

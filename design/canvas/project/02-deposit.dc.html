@@ -18,83 +18,38 @@ a{color:#ffffff;text-decoration:none}a:hover{color:#ffffff}
 </helmet>
 <div style="min-height: 1080px; background: #000000; color: var(--ink); font-family: var(--font-body)">
 
-  <header style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 32px; padding: 20px 48px 0">
-    <a href="Main.dc.html" style="display: flex; align-items: baseline; gap: 12px"><span style="font: 500 22px/1 var(--font-display); letter-spacing: -0.3px">zeno<span style="color: var(--key)">.</span></span><span style="font: var(--type-body-sm); color: var(--mute)">Confidential Loans</span></a>
-    <span style="font: var(--type-body-sm); color: var(--mute)"><span style="color: var(--ink)">Subscription</span>, 0:14 left on team devnet</span>
-  </header>
-
-  <nav aria-label="Demo steps" style="padding: 28px 48px 0">
-    <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px">
-      <li><a href="01-broker-setup.dc.html" aria-label="Step 1, done: Create broker" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--mute)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.48)"></span><span style="font: 500 13px/1 var(--font-body)">1</span></a></li>
-      <li><a href="02-deposit.dc.html" aria-current="page" aria-label="Step 2, current: Subscribe" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="20" width="32" height="18" rx="2"></rect><circle cx="20" cy="29" r="4"></circle><path d="M8 16h32v18M12 12h32v18"></path></svg></span><span style="height: 3px; background: #ffffff"></span><span style="font: 600 13px/1.3 var(--font-body)">2 Subscribe</span></a></li>
-      <li><a href="03-draw.dc.html" aria-label="Step 3: Draw and merge" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">3</span></a></li>
-      <li><a href="04-originate.dc.html" aria-label="Step 4: Co-sign loans" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">4</span></a></li>
-      <li><a href="05-explorer-loans.dc.html" aria-label="Step 5: Explorer" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">5</span></a></li>
-      <li><a href="06-repay.dc.html" aria-label="Step 6: Repay loan A" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">6</span></a></li>
-      <li><a href="07-settle.dc.html" aria-label="Step 7: Settle" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">7</span></a></li>
-      <li><a href="08-impair-default.dc.html" aria-label="Step 8: Default loan B" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">8</span></a></li>
-      <li><a href="09-explorer-default.dc.html" aria-label="Step 9: Explorer after default" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">9</span></a></li>
-      <li><a href="10-redeem.dc.html" aria-label="Step 10: Redeem" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="20" width="32" height="18" rx="2"></rect><circle cx="20" cy="29" r="4"></circle><path d="M8 16h32v18M12 12h32v18"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">10</span></a></li>
-    </ol>
-  </nav>
+  <dc-import name="StepNav" step="2" hint-size="100%,120px"></dc-import>
 
   <div style="display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 48px 64px; padding: 40px 48px 64px">
-    <aside aria-label="Who acts on this screen and who can read it" style="flex: 1 1 280px; max-width: 320px; display: flex; flex-direction: column; align-items: flex-end; gap: 32px; text-align: right">
-    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 16px">
-      <span aria-hidden="true" style="display: flex"><svg width="64" height="64" viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="20" width="32" height="18" rx="2"></rect><circle cx="20" cy="29" r="4"></circle><path d="M8 16h32v18M12 12h32v18"></path></svg></span>
-      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px">
-        <h1 style="margin: 0; font: 500 32px/1.15 var(--font-display); letter-spacing: -0.32px">{{depositorName}}</h1>
-        <p style="margin: 0; max-width: 560px; font: var(--type-body-lg); letter-spacing: -0.09px; color: var(--mute)">Depositors provide the capital that is lent out to the Borrowers. Deposits are public.</p>
-        <div role="group" aria-label="Depositor" style="margin-top: 6px; display: inline-flex; padding: 4px; border-radius: 9999px; border: 1px solid var(--rule)">
-          <button type="button" aria-pressed="{{isA}}" onClick="{{pickA}}" style="{{tabA}}">Depositor A</button>
-          <button type="button" aria-pressed="{{isB}}" onClick="{{pickB}}" style="{{tabB}}">Depositor B</button>
-        </div>
+    <aside aria-label="Role" style="flex: 1 1 280px; max-width: 320px; display: flex; flex-direction: column; align-items: flex-end; gap: 24px">
+      <dc-import name="Role" role="depositor" who="{{depositorName}}" action="Subscribes with a public deposit" hint-size="320px,220px"></dc-import>
+      <div role="group" aria-label="Depositor" style="display: inline-flex; padding: 4px; border-radius: 9999px; border: 1px solid var(--rule)">
+        <button type="button" aria-pressed="{{isA}}" onClick="{{pickA}}" style="{{tabA}}">Depositor A</button>
+        <button type="button" aria-pressed="{{isB}}" onClick="{{pickB}}" style="{{tabB}}">Depositor B</button>
       </div>
-    </div>
-      <section aria-labelledby="vis" style="width: 100%; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; padding-top: 24px; border-top: 1px solid var(--rule)">
-        <h2 id="vis" style="margin: 0; font: var(--type-body-sm); color: var(--mute)">Visible to</h2>
-        <dl style="margin: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 14px">
-          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Outsider<span aria-hidden="true" style="display: flex"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">Every deposit and share balance</dd></div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Broker<span aria-hidden="true" style="display: flex"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The same</dd></div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Borrowers<span aria-hidden="true" style="display: flex"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The same</dd></div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Issuer<span aria-hidden="true" style="width: 16px"></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The same</dd></div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Auditor<span aria-hidden="true" style="width: 16px"></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The same</dd></div>
-        </dl>
-      </section>
     </aside>
 
-  <main style="flex: 999 1 560px; min-width: 0; max-width: 820px; display: flex; flex-direction: column; gap: 48px">
+  <main style="flex: 999 1 560px; min-width: 0; max-width: 820px; display: flex; flex-direction: column; gap: 40px">
 
-    <div style="display: flex; flex-wrap: wrap; gap: 32px 64px">
-      <div style="display: flex; flex-direction: column; gap: 6px">
-        <span style="font: var(--type-body-sm); color: var(--mute)">Wallet</span>
-        <span style="font: 500 48px/1.05 var(--font-display); letter-spacing: -0.48px">300,000,000</span>
-        <span style="font: var(--type-body-sm); color: var(--dim)">CUSD, public balance</span>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 6px">
-        <span style="font: var(--type-body-sm); color: var(--mute)">Shares received</span>
-        <span style="font: 500 48px/1.05 var(--font-display); letter-spacing: -0.48px">1 per CUSD</span>
-        <span style="font: var(--type-body-sm); color: var(--dim)">Redeemable in Redemption, net of any loss</span>
-      </div>
-    </div>
+    <dc-import name="Value" label="Wallet" amount="[wallet balance]" visibility="public" hint-size="240px,64px"></dc-import>
 
     <section aria-labelledby="deposit" style="display: flex; flex-direction: column; gap: 16px">
       <h2 id="deposit" style="margin: 0; font: 500 20px/1.4 var(--font-display)">Deposit</h2>
       <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; max-width: 560px">
-        <label style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px; font: var(--type-body-sm); color: var(--mute)">Amount in CUSD
-          <input type="text" placeholder="[deposit amount]" style="width: 100%; box-sizing: border-box; height: 64px; padding: 0; border: 0; border-bottom: 1px solid var(--rule-strong); background: transparent; color: var(--ink); font: 500 40px/1 var(--font-display); letter-spacing: -0.4px">
-        </label>
+        <div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px">
+          <label for="deposit-amount" style="font: var(--type-body-sm); color: var(--mute)">Deposit amount</label>
+          <div style="display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--rule-strong)">
+            <span aria-hidden="true" style="font: 500 40px/1 var(--font-display); color: var(--dim)">$</span>
+            <input id="deposit-amount" type="text" inputmode="decimal" placeholder="[deposit amount]" style="flex: 1; min-width: 0; box-sizing: border-box; height: 64px; padding: 0; border: 0; background: transparent; color: var(--ink); font: 500 40px/1 var(--font-display); letter-spacing: -0.4px">
+          </div>
+        </div>
         <button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 9999px; border: 1px solid var(--rule-strong); background: transparent; color: var(--ink); font: 500 14px/1 var(--font-body); cursor: pointer">Max</button>
       </div>
-      <p style="margin: 0; max-width: 640px; font: var(--type-body-sm); color: var(--mute)">There is no first-loss cover, so depositors carry any loss. Deposits close with Subscription; after that VaultDeposit fails with tecEXPIRED, and withdrawals stay locked until Redemption.</p>
     </section>
 
-    <div style="display: flex; flex-direction: column; gap: 12px">
-      <button type="button" style="align-self: flex-start; min-height: 52px; padding: 0 28px; border: 0; border-radius: 9999px; background: #ffffff; color: #000000; font: 600 16px/1 var(--font-body); letter-spacing: 0.24px; cursor: pointer">Deposit as {{depositorName}}</button>
-      <p style="margin: 0; font: var(--type-body-sm); color: var(--dim)">Signs VaultDeposit: about 5 s median on team devnet.</p>
-    </div>
+    <button type="button" style="align-self: flex-start; min-height: 52px; padding: 0 28px; border: 0; border-radius: 9999px; background: #ffffff; color: #000000; font: 600 16px/1 var(--font-body); letter-spacing: 0.24px; cursor: pointer">Deposit as {{depositorName}}</button>
 
-    <a href="03-draw.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 9999px; border: 1px solid var(--rule-strong); font: 500 14px/1 var(--font-body)">Continue to step 3: Draw and merge</a>
+    <a href="03-draw.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 9999px; border: 1px solid var(--rule-strong); font: 500 14px/1 var(--font-body)">Continue to step 3</a>
   </main>
   </div>
 </div>
