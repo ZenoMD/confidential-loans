@@ -22,16 +22,22 @@ const owed: Amount = {
   bound: 1000n,
 }
 
-/** A decrypt that resolves only when `settle` is called, recording every call. */
-function fakeDecrypt() {
+/**
+ * A decrypt that resolves only when `settle` is called, recording every call. The first calls
+ * reject with `faults`, one each, as a failed WASM load would.
+ */
+function fakeDecrypt(...faults: string[]) {
   const calls: [string, string, bigint][] = []
   const waiting: (() => void)[] = []
   const decrypt: Decrypt = (ciphertext, privateKey, bound) => {
     calls.push([ciphertext, privateKey, bound])
     return new Promise((resolve, reject) => {
       waiting.push(() => {
+        const fault = faults.shift()
         const entry = ledger[ciphertext]
-        if (entry === undefined || entry[0] !== privateKey || entry[1] > bound) {
+        if (fault !== undefined) {
+          reject(new Error(fault))
+        } else if (entry === undefined || entry[0] !== privateKey || entry[1] > bound) {
           reject(new Error('mpt_decrypt_amount failed'))
         } else {
           resolve(entry[1])
@@ -190,6 +196,47 @@ describe('createAmountDisplay', () => {
     await assert.rejects(display.reveal(tight, borrower), { message })
     assert.equal(notified, 1)
     assert.equal(calls.length, 1)
+  })
+
+  it('searches again when the same ciphertext arrives with a larger bound', async () => {
+    const { decrypt, calls, settle } = fakeDecrypt()
+    const display = createAmountDisplay(decrypt)
+    const tight: Amount = { kind: 'encrypted', to: { '02B0': 'CT_BORROWER' }, bound: 100n }
+
+    const failed = assert.rejects(display.reveal(tight, borrower), { message: /bound 100/ })
+    await settle()
+    await failed
+    const revealed = display.reveal(owed, borrower)
+    await settle()
+
+    assert.deepEqual(await revealed, { visibility: 'decrypted', value: 105n })
+    assert.deepEqual(display.show(tight, borrower), { visibility: 'decrypted', value: 105n })
+    assert.deepEqual(
+      calls.map(([, , bound]) => bound),
+      [100n, 1000n],
+    )
+  })
+
+  it('fails at once on an error other than the search, and reveal retries it', async () => {
+    const { decrypt, calls, settle } = fakeDecrypt('wasm fetch failed')
+    const display = createAmountDisplay(decrypt)
+    const large: Amount = { kind: 'encrypted', to: { '02B0': 'CT_LARGE' }, bound: 3000n }
+
+    const failed = assert.rejects(display.reveal(large, borrower), (error: Error) => {
+      assert.match(error.message, /Could not decrypt CT_LARGE/)
+      assert.match(String(error.cause), /wasm fetch failed/)
+      return true
+    })
+    await settle()
+    await failed
+    assert.equal(calls.length, 1)
+    assert.throws(() => display.show(large, borrower), { message: /Could not decrypt CT_LARGE/ })
+
+    const retried = display.reveal(large, borrower)
+    await settle()
+
+    assert.deepEqual(await retried, { visibility: 'decrypted', value: 2500n })
+    assert.deepEqual(display.show(large, borrower), { visibility: 'decrypted', value: 2500n })
   })
 
   it('reports a failed decrypt through show alone, without an unhandled rejection', async () => {

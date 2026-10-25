@@ -1,6 +1,9 @@
 /** XLS-66 LoanSet minimum for `PaymentInterval` and `GracePeriod`, in seconds. */
 const MIN_INTERVAL_SECONDS = 60
 
+/** XLS-66 `PaymentTotal`, `PaymentInterval` and `GracePeriod` are `UINT32` fields. */
+const UINT32_MAX = 0xffff_ffff
+
 /**
  * The terms of one confidential loan. The three amounts are encrypted on the ledger; the
  * schedule is public.
@@ -40,7 +43,11 @@ function scheduleProblems(terms: LoanTerms): string[] {
     ['grace period', gracePeriod],
   ] as const
   for (const [name, value] of fields) {
-    if (!Number.isSafeInteger(value)) problems.push(`${name} ${value} is not a whole number`)
+    if (!Number.isSafeInteger(value)) {
+      problems.push(`${name} ${value} is not a whole number`)
+    } else if (value > UINT32_MAX) {
+      problems.push(`${name} ${value} exceeds ${UINT32_MAX}`)
+    }
   }
   if (problems.length > 0) return problems
 
@@ -64,10 +71,12 @@ function scheduleProblems(terms: LoanTerms): string[] {
 }
 
 /**
- * Checks loan terms against the rules a confidential `LoanSet` enforces: the range proofs of
- * SPEC section 11.2 (O, Q >= 0, O >= P, N*Q >= O, and P >= 0 from the XLS-96 Send proof) and the
- * XLS-66 schedule checks (N >= 1, `PaymentInterval` >= 60, 60 <= `GracePeriod` <=
- * `PaymentInterval`).
+ * Checks loan terms against these rules of a confidential `LoanSet`: the range proofs of SPEC
+ * section 11.2 (O, Q >= 0, O >= P, N*Q >= O, and P >= 0 from the XLS-96 Send proof), the XLS-66
+ * section 3.8.5.1 schedule checks 14-16 (N >= 1, `PaymentInterval` >= 60, 60 <= `GracePeriod` <=
+ * `PaymentInterval`), and the `UINT32` range of those three fields. It does not check the
+ * schedule overflow of XLS-66 section 3.8.5.2 item 2, which the ledger decides against its
+ * protocol time limits.
  *
  * @param terms - The terms to check.
  * @throws {RangeError} Naming every rule the terms break.

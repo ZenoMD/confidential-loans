@@ -72,6 +72,25 @@ describe('validateLoanTerms', () => {
     rejects({ gracePeriod: 60.5 }, /grace period 60.5 is not a whole number/)
   })
 
+  it('rejects schedule values above the UINT32 field maximum', () => {
+    rejects({ paymentTotal: 2 ** 32 }, /payment total 4294967296 exceeds 4294967295/)
+    rejects(
+      { paymentInterval: 2 ** 32, gracePeriod: 60 },
+      /payment interval 4294967296 exceeds 4294967295/,
+    )
+    rejects({ gracePeriod: 2 ** 32 }, /grace period 4294967296 exceeds 4294967295/)
+  })
+
+  it('accepts schedule values at the UINT32 field maximum', () => {
+    validateLoanTerms({
+      ...valid,
+      amountOwed: 100n,
+      paymentTotal: 0xffff_ffff,
+      paymentInterval: 0xffff_ffff,
+      gracePeriod: 0xffff_ffff,
+    })
+  })
+
   it('names every broken rule in one error', () => {
     rejects({ principal: 200n, paymentTotal: 0 }, /below principal 200.*payment total 0/s)
   })

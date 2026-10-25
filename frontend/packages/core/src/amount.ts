@@ -21,13 +21,17 @@ export type Revealed =
 /** What a viewer can see of an amount right now. */
 export type Shown = Revealed | { readonly visibility: 'pending' }
 
-/** Recovers the value of an ElGamal ciphertext in [0, bound], as mpt-crypto `decryptAmount`. */
+/**
+ * Recovers the value of an ElGamal ciphertext in [0, bound], as mpt-crypto `decryptAmount`. It
+ * rejects with the message `mpt_decrypt_amount failed` when no value in that range matches.
+ */
 export type Decrypt = (ciphertext: Hex, privateKey: Hex, bound: bigint) => Promise<bigint>
 
 /**
  * Decides, in one place, what each viewer sees of an amount. Public amounts stay public. An
  * encrypted amount is decrypted when the viewer holds a key it was sent to, and redacted
- * otherwise. Each ciphertext is decrypted at most once.
+ * otherwise. Each ciphertext is decrypted once, and again only after a failure that a new call
+ * could fix: a larger bound, or an error other than the search (such as a failed WASM load).
  */
 export interface AmountDisplay {
   /**
@@ -37,10 +41,14 @@ export interface AmountDisplay {
    * @param amount - The amount to show.
    * @param key - The viewer's ElGamal keypair; undefined for a viewer with none.
    * @returns `pending` while the decrypt runs.
-   * @throws {Error} When the decrypt failed, for example on a value above the bound.
+   * @throws {Error} When the decrypt failed, for example on a value above the bound. It keeps
+   *   throwing until `reveal` retries or the amount arrives with a larger bound.
    */
   show(amount: Amount, key: ConfidentialKeypair | undefined): Shown
-  /** As `show`, but waits for the decrypt to finish. */
+  /**
+   * As `show`, but waits for the decrypt to finish. After a failure other than the search, it
+   * starts the decrypt again.
+   */
   reveal(amount: Amount, key: ConfidentialKeypair | undefined): Promise<Revealed>
   /**
    * Calls `listener` each time a decrypt finishes or fails.
@@ -53,7 +61,12 @@ export interface AmountDisplay {
 type Decryption =
   | { readonly state: 'pending'; readonly settled: Promise<Revealed> }
   | { readonly state: 'done'; readonly shown: Revealed }
-  | { readonly state: 'failed'; readonly error: Error }
+  | {
+      readonly state: 'failed'
+      readonly error: Error
+      /** The bound the search failed at; undefined when the decrypt failed for another reason. */
+      readonly searched: bigint | undefined
+    }
 
 const REDACTED: Revealed = Object.freeze({ visibility: 'redacted' })
 const PENDING: Shown = Object.freeze({ visibility: 'pending' })
@@ -71,11 +84,17 @@ function ciphertextFor(amount: Encrypted, key: ConfidentialKeypair): Hex | undef
 /** First search bound; each failed search doubles it, up to the amount's bound. */
 const FIRST_BOUND = 1000n
 
+/** The error mpt-crypto `decryptAmount` throws when no value within the bound matches. */
+const SEARCH_FAILED = 'mpt_decrypt_amount failed'
+
+function isSearchFailure(error: unknown): boolean {
+  return error instanceof Error && error.message === SEARCH_FAILED
+}
+
 /**
- * Decrypts by searching doubling bounds. mpt-crypto 0.1.1 scans all of [0, bound], so a search
- * costs time linear in the bound, not the value (measured in Node 22: about 3.4 ms per 1,000 of
- * bound, and a value above the bound fails only after the full scan). Doubling keeps the total
- * within about 4 times the cost of a search bounded at the value itself.
+ * Decrypts by searching doubling bounds. A search costs time linear in the bound, not the value
+ * (docs/devnet-facts.md), so doubling keeps the total within about 4 times the cost of a search
+ * bounded at the value itself. Any error other than a failed search is thrown at once.
  */
 async function searchUpTo(
   decrypt: Decrypt,
@@ -88,10 +107,20 @@ async function searchUpTo(
     try {
       return await decrypt(ciphertext, privateKey, tried)
     } catch (error) {
-      if (tried >= bound) throw error
+      if (tried >= bound || !isSearchFailure(error)) throw error
     }
     tried = tried * 2n < bound ? tried * 2n : bound
   }
+}
+
+type Failed = Extract<Decryption, { state: 'failed' }>
+
+/**
+ * Whether a failed decrypt is worth starting again: a failed search only with a larger bound,
+ * any other failure only when the caller asks to retry.
+ */
+function canRetry(failed: Failed, bound: bigint, retry: boolean): boolean {
+  return failed.searched === undefined ? retry : bound > failed.searched
 }
 
 /**
@@ -123,8 +152,10 @@ export function createAmountDisplay(decrypt: Decrypt): AmountDisplay {
         return shown
       },
       (cause: unknown) => {
-        const error = new Error(`Could not decrypt ${ciphertext} within bound ${bound}`, { cause })
-        decryptions.set(ciphertext, { state: 'failed', error })
+        const searched = isSearchFailure(cause) ? bound : undefined
+        const reason = searched === undefined ? '' : ` within bound ${bound}`
+        const error = new Error(`Could not decrypt ${ciphertext}${reason}`, { cause })
+        decryptions.set(ciphertext, { state: 'failed', error, searched })
         throw error
       },
     )
@@ -134,17 +165,25 @@ export function createAmountDisplay(decrypt: Decrypt): AmountDisplay {
     return pending
   }
 
-  function lookup(amount: Amount, key: ConfidentialKeypair | undefined): Revealed | Decryption {
+  function lookup(
+    amount: Amount,
+    key: ConfidentialKeypair | undefined,
+    retry: boolean,
+  ): Revealed | Decryption {
     if (amount.kind === 'public') return publicShown(amount.value)
     if (key === undefined) return REDACTED
     const ciphertext = ciphertextFor(amount, key)
     if (ciphertext === undefined) return REDACTED
-    return decryptions.get(ciphertext) ?? start(ciphertext, key.privateKey, amount.bound)
+    const found = decryptions.get(ciphertext)
+    if (found === undefined || (found.state === 'failed' && canRetry(found, amount.bound, retry))) {
+      return start(ciphertext, key.privateKey, amount.bound)
+    }
+    return found
   }
 
   return {
     show(amount, key) {
-      const found = lookup(amount, key)
+      const found = lookup(amount, key, false)
       if ('visibility' in found) return found
       switch (found.state) {
         case 'pending':
@@ -156,7 +195,7 @@ export function createAmountDisplay(decrypt: Decrypt): AmountDisplay {
       }
     },
     async reveal(amount, key) {
-      const found = lookup(amount, key)
+      const found = lookup(amount, key, true)
       if ('visibility' in found) return found
       switch (found.state) {
         case 'pending':
