@@ -24,9 +24,9 @@ The protocol for lenders works exactly as in XLS-66. Lenders contribute MPTs to 
 
 The broker withdraws funds from the vault with a `LoanBrokerDraw` transaction. This moves funds from the vault into the brokers confidential lending balance. The MPTs move into the lending balance confidential inbox and must be moved to the lending spendable balance by calling `LoanBrokerMergeInbox`. This lending balance is confidential and can be used to fund multiple loans without revealing how much is allocated to each loan. 
 
-To issue a loan a broker and borrower agree to loan terms off-chain and co-sign a `LoanSet` transaction as in XLS-66. The difference being that the loan terms (principal, amount owed, periodic payment, and interest rate) values are sent as ELGamal encrypted fields encrypted to the broker, borrower and loan auditor. A ZK proof ensures consistency between these encrypted values and applies the relevant range check. The homomorphic properties of ELGamal allow the ledger to debit the broker lending balance and credit the borrowers confidential inbox without revealing the principal publicly. Once the borrower has received their loan they can convert it to a spendable confidential balance and proceed to spend it confidentially as per XLS-96.
+To issue a loan a broker and borrower agree to loan terms off-chain and co-sign a `LoanSet` transaction as in XLS-66. The difference being that the loan terms (principal, amount owed and periodic payment) values are sent as ELGamal encrypted fields encrypted to the broker, borrower and loan auditor. A ZK proof ensures consistency between these encrypted values and applies the relevant range check. The homomorphic properties of ELGamal allow the ledger to debit the broker lending balance and credit the borrowers confidential inbox without revealing the principal publicly. Once the borrower has received their loan they can proceed to spend it confidentially as per XLS-96.
 
-The borrower makes periodic confidential repayments via `ConfidentialLoanPay` transactions. This contains the repayment amount encrypted to the broker, borrower, MPT Auditor and Loan Auditor. Because the ledger cannot read the encrypted payment amount directly it relies on some additional ZK proofs to ensure it is at least the periodic payment, or repays the remaining balance in full.
+The borrower makes periodic confidential repayments via `ConfidentialLoanPay` transactions. This contains the repayment amount encrypted to the broker, borrower, MPT Auditor and Loan Auditor. Because the ledger cannot read the encrypted payment amount directly it relies on some additional ZK proofs to ensure it exceeds the minimum periodic payment requirement, and to check if the loan balance has been repaid in full.
 
 A loan can be defaulted by the broker if a payment has not been made once `NextPaymentDueDate` + `GracePeriod` has passed (as in XLS-66).  
 
@@ -75,7 +75,6 @@ Each hidden term is stored as three 66-byte XLS-96 ElGamal ciphertexts of the sa
 | Principal        | `BorrowerEncryptedPrincipal`, `BrokerEncryptedPrincipal`, `LoanAuditorEncryptedPrincipal`       | The amount lent.                                          |
 | Amount Owed      | `BorrowerEncryptedAmountOwed`, `BrokerEncryptedAmountOwed`, `LoanAuditorEncryptedAmountOwed`    | The amount still to repay. Reduced by each payment.       |
 | Periodic Payment | `BorrowerEncryptedPeriodicPayment`, `BrokerEncryptedPeriodicPayment`, `LoanAuditorEncryptedPeriodicPayment` | The minimum regular payment.                 |
-| Interest Rate    | `BorrowerEncryptedInterestRate`, `BrokerEncryptedInterestRate`, `LoanAuditorEncryptedInterestRate` | The annual interest rate, in 1/10 basis points.     |
 
 | Field Name                 | Required    | JSON Type | Internal Type | Default Value | Description                                                         |
 | :------------------------- | :---------- | :-------- | :------------ | :------------ | :------------------------------------------------------------------ |
@@ -295,7 +294,7 @@ With a confidential loan the `PrincipalRequested`, the fee fields and the intere
 | `AuditorEncryptedAmount`        | Conditional | `string`  | `BLOB`        | N/A           | The principal under the MPT Auditor's key.                                                                   |
 | `BalanceCommitment`             | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Lending Balance's spending balance.                                                      |
 | `AmountCommitment`              | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the principal.                                                                               |
-| `ZKProof`                       | Conditional | `string`  | `BLOB`        | N/A           | The 3288-byte `LoanSet` proof (§11.2).                                                                       |
+| `ZKProof`                       | Conditional | `string`  | `BLOB`        | N/A           | The 3030-byte `LoanSet` proof (section 11.2).                                                                       |
 | `LoanAuditorEncryptionKey`      | Conditional | `string`  | `BLOB`        | N/A           | The Loan Auditor's 33-byte compressed ElGamal public key.                                                    |
 | `LoanAuditorEncryptedPrincipal` | Conditional | `string`  | `BLOB`        | N/A           | The principal under the Loan Auditor's key.                                                                  |
 | `BorrowerEncryptedAmountOwed`         | Conditional | `string`  | `BLOB`        | N/A           | The initial Amount Owed under the Borrower's key.                                                            |
@@ -304,28 +303,24 @@ With a confidential loan the `PrincipalRequested`, the fee fields and the intere
 | `BorrowerEncryptedPeriodicPayment`    | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment under the Borrower's key.                                                               |
 | `BrokerEncryptedPeriodicPayment`      | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment under the Broker Key.                                                                   |
 | `LoanAuditorEncryptedPeriodicPayment` | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment under the Loan Auditor's key.                                                           |
-| `BorrowerEncryptedInterestRate`       | Conditional | `string`  | `BLOB`        | N/A           | The Interest Rate under the Borrower's key.                                                                  |
-| `BrokerEncryptedInterestRate`         | Conditional | `string`  | `BLOB`        | N/A           | The Interest Rate under the Broker Key.                                                                      |
-| `LoanAuditorEncryptedInterestRate`    | Conditional | `string`  | `BLOB`        | N/A           | The Interest Rate under the Loan Auditor's key.                                                              |
-| `AmountOwedCommitment`                | Conditional | `string`  | `BLOB`        | N/A           | A 33-byte commitment to the Amount Owed (§11.2).                                                             |
-| `PeriodicPaymentCommitment`           | Conditional | `string`  | `BLOB`        | N/A           | A 33-byte commitment to the Periodic Payment (§11.2).                                                        |
-| `InterestRateCommitment`              | Conditional | `string`  | `BLOB`        | N/A           | A 33-byte commitment to the Interest Rate (§11.2).                                                           |
+| `AmountOwedCommitment`                | Conditional | `string`  | `BLOB`        | N/A           | A 33-byte commitment to the Amount Owed (section 11.2).                                                             |
+| `PeriodicPaymentCommitment`           | Conditional | `string`  | `BLOB`        | N/A           | A 33-byte commitment to the Periodic Payment (section 11.2).                                                        |
 
 "Conditional" fields are required with a confidential `LoanBroker` and not allowed otherwise.
 
 ### 11.2. Proofs
 
-All ciphertexts of a term share one randomness r, different from every other term's, which is also the blinding factor of the term's commitment t·G + r·H, as in XLS-96 `ConfidentialMPTSend`. Let P, O, Q and R be the terms, PC_P be `AmountCommitment`, PC_O, PC_Q and PC_R the term commitments, and N be `PaymentTotal`. `ZKProof` concatenates these proofs, all bound to the context hash of [Appendix A.2](#a2-loanset-context-hash):
+All ciphertexts of a term share one randomness r, different from every other term's, which is also the blinding factor of the term's commitment t*G + r*H, as in XLS-96 `ConfidentialMPTSend`. Let P, O and Q be the terms, PC_P be `AmountCommitment`, PC_O and PC_Q the term commitments, and N be `PaymentTotal`. `ZKProof` concatenates these proofs, all bound to the context hash of [Appendix A.2](#a2-loanset-context-hash):
 
 | Part | Bytes    | Proof                                                                          | Proves                                                     |
 | :--- | -------: | :----------------------------------------------------------------------------- | :--------------------------------------------------------- |
 | 1    | 946      | XLS-96 `ConfidentialMPTSend` proof to the Borrower, Issuer and MPT Auditor      | The principal transfer, as in XLS-96.                      |
 | 2    | 192      | XLS-96 Send sigma proof to the Loan Auditor                                     | `LoanAuditorEncryptedPrincipal` encrypts P.                |
-| 3–5  | 192 each | XLS-96 Send sigma proof to the Borrower, Broker Key and Loan Auditor            | The O, Q and R ciphertexts encrypt the values of PC_O, PC_Q and PC_R. |
-| 6    | 820      | Aggregated Bulletproof over PC_O, PC_Q, PC_R and 100000·G − PC_R                | O, Q, R ≥ 0 and R ≤ 100000.                                |
-| 7    | 754      | Aggregated Bulletproof over PC_O − PC_P and N·PC_Q − PC_O                       | O ≥ P and N·Q ≥ O.                                         |
+| 3-4  | 192 each | XLS-96 Send sigma proof to the Borrower, Broker Key and Loan Auditor            | The O and Q ciphertexts encrypt the values of PC_O and PC_Q. |
+| 5    | 754      | Aggregated Bulletproof over PC_O and PC_Q                                       | O, Q >= 0.                                                   |
+| 6    | 754      | Aggregated Bulletproof over PC_O - PC_P and N*PC_Q - PC_O                       | O >= P and N*Q >= O.                                         |
 
-Recipients are in the order listed. Parts 2–5 prove ownership of the Lending Balance as part 1 does, so the Broker builds `ZKProof`.
+Recipients are in the order listed. Parts 2-4 prove ownership of the Lending Balance as part 1 does, so the Broker builds `ZKProof`.
 
 ### 11.3. Transaction Fee
 
@@ -333,13 +328,13 @@ As in XLS-66, plus 9 times the standard base fee, matching the 10 times of XLS-9
 
 ### 11.4. Failure Conditions
 
-In addition to the XLS-66 conditions, except 6, 7, 9 and 13–20 of XLS-66 §3.8.5.2 (the Vault, fee and interest checks), which do not apply with a confidential `LoanBroker`:
+In addition to the XLS-66 conditions, except 6, 7, 9 and 13-20 of XLS-66 section 3.8.5.2 (the Vault, fee and interest checks), which do not apply with a confidential `LoanBroker`:
 
-1. Some but not all of the §11.1 fields are present, or they are present with `PrincipalRequested`, a fee field, an interest-rate field or `tfLoanOverpayment`. (`temMALFORMED`)
+1. Some but not all of the section 11.1 fields are present, or they are present with `PrincipalRequested`, a fee field, an interest-rate field or `tfLoanOverpayment`. (`temMALFORMED`)
 2. A ciphertext is malformed. (`temBAD_CIPHERTEXT`)
-3. `LoanAuditorEncryptionKey` or a commitment is not a valid 33-byte compressed point, or `ZKProof` is not 3288 bytes. (`temMALFORMED`)
+3. `LoanAuditorEncryptionKey` or a commitment is not a valid 33-byte compressed point, or `ZKProof` is not 3030 bytes. (`temMALFORMED`)
 4. The ciphertexts of a term do not share their first 33 bytes, or two terms' ciphertexts do. (`temMALFORMED`)
-5. The §11.1 fields are present but the `LoanBroker` is not confidential, or absent but it is. (`tecNO_PERMISSION`)
+5. The section 11.1 fields are present but the `LoanBroker` is not confidential, or absent but it is. (`tecNO_PERMISSION`)
 6. The Borrower's `MPToken` has no `HolderEncryptionKey`, `ConfidentialBalanceInbox` or `IssuerEncryptedBalance`. (`tecNO_PERMISSION`)
 7. The Borrower or the `LoanBroker` pseudo-account is locked for the asset. (`tecLOCKED`)
 8. Part 1 of `ZKProof` does not verify against the Lending Balance's `ConfidentialBalanceSpending` and `ConfidentialBalanceVersion`. (`tecBAD_PROOF`)
@@ -347,10 +342,10 @@ In addition to the XLS-66 conditions, except 6, 7, 9 and 13–20 of XLS-66 §3.8
 
 ### 11.5. State Changes
 
-With a confidential `LoanBroker`, XLS-66 state changes 3–6 (the holdings and the Vault transfer) and the `DebtTotal` increase in step 7 do not apply. Instead:
+With a confidential `LoanBroker`, XLS-66 state changes 3-6 (the holdings and the Vault transfer) and the `DebtTotal` increase in step 7 do not apply. Instead:
 
 1. Move the principal as in XLS-96 `ConfidentialMPTSend`, from the `LoanBroker` pseudo-account to the Borrower. The Lending Balance's `ConfidentialBalanceSpending` and mirrors are debited and its `ConfidentialBalanceVersion` incremented. The Borrower's `ConfidentialBalanceInbox` and mirrors are credited with the re-randomized ciphertexts.
-2. Create the `Loan` as in XLS-66 step 1, but with the §5.3 fields set to 0, and with `lsfLoanConfidential`, `ConfidentialLoanVersion` 0 and the §5.1 fields from the transaction. `BrokerEncryptedPrincipal` and `BorrowerEncryptedPrincipal` are `SenderEncryptedAmount` and `DestinationEncryptedAmount` as submitted, not re-randomized, so that they keep the principal's shared randomness.
+2. Create the `Loan` as in XLS-66 step 1, but with the section 5.3 fields set to 0, and with `lsfLoanConfidential`, `ConfidentialLoanVersion` 0 and the section 5.1 fields from the transaction. `BrokerEncryptedPrincipal` and `BorrowerEncryptedPrincipal` are `SenderEncryptedAmount` and `DestinationEncryptedAmount` as submitted, not re-randomized, so that they keep the principal's shared randomness.
 
 ### 11.6. Invariants
 
@@ -384,7 +379,7 @@ The Borrower pays a confidential `Loan` from their confidential spending balance
 | `AmountCommitment`           | Yes         | `string`  | `BLOB`        | N/A           | A commitment to the payment.                                                 |
 | `AmountOwedCommitment`       | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Amount Owed. Required for a regular payment, not allowed for a full payment. |
 | `PeriodicPaymentCommitment`  | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Periodic Payment. Required for a regular payment, not allowed for a full payment. |
-| `ZKProof`                    | Yes         | `string`  | `BLOB`        | N/A           | The 2148-byte (regular) or 1202-byte (full) payment proof (§13.3).           |
+| `ZKProof`                    | Yes         | `string`  | `BLOB`        | N/A           | The 2148-byte (regular) or 1202-byte (full) payment proof (section 13.3).           |
 
 ### 13.2. Flags
 
@@ -400,10 +395,10 @@ Let X be the payment. `ZKProof` concatenates these proofs, all bound to the cont
 | :--- | ----: | :------ | :------------------------------------------------------------------------------------------------------ | :------------------- |
 | 1    | 946   | Both    | XLS-96 `ConfidentialMPTSend` proof to the Broker Key, Issuer and MPT Auditor                             | The payment transfer, as in XLS-96. |
 | 2    | 192   | Both    | XLS-96 Send sigma proof to the Loan Auditor                                                               | `LoanAuditorEncryptedAmount` encrypts X. |
-| 3    | 64    | Full    | XLS-96 Clawback sigma proof, amount 0, Borrower's key, over `SenderEncryptedAmount` − `BorrowerEncryptedAmountOwed` | X = Amount Owed. |
+| 3    | 64    | Full    | XLS-96 Clawback sigma proof, amount 0, Borrower's key, over `SenderEncryptedAmount` - `BorrowerEncryptedAmountOwed` | X = Amount Owed. |
 | 3    | 128   | Regular | XLS-96 ConvertBack sigma proof, Borrower's key, over `BorrowerEncryptedAmountOwed` and `AmountOwedCommitment` | `AmountOwedCommitment` commits to the Amount Owed. |
 | 4    | 128   | Regular | As part 3, over `BorrowerEncryptedPeriodicPayment` and `PeriodicPaymentCommitment`                        | `PeriodicPaymentCommitment` commits to the Periodic Payment. |
-| 5    | 754   | Regular | Aggregated Bulletproof over `AmountCommitment` − `PeriodicPaymentCommitment` and `AmountOwedCommitment` − `AmountCommitment` | Periodic Payment ≤ X ≤ Amount Owed. |
+| 5    | 754   | Regular | Aggregated Bulletproof over `AmountCommitment` - `PeriodicPaymentCommitment` and `AmountOwedCommitment` - `AmountCommitment` | Periodic Payment <= X <= Amount Owed. |
 
 ### 13.4. Transaction Fee
 
@@ -439,11 +434,15 @@ As for XLS-96 `ConfidentialMPTSend`: `ConfidentialOutstandingAmount`, `Outstandi
 
 With a confidential `LoanBroker`, XLS-66 state change 5 (clearing `DebtTotal` when the last `Loan` is deleted) does not apply.
 
+## Limitations
+
+- No late fees or accrual since interest cannot be applied with additive homomorphism 
+
 ## Appendix A: Context Hashes
 
 ### A.1. `LoanBrokerSet` Context Hash
 
-Computed exactly as the XLS-96 `ConfidentialMPTConvert` context hash, but with `ttLOAN_BROKER_SET` and the `LoanBroker` owner as `Account`:
+Computed as the XLS-96 `ConfidentialMPTConvert` context hash, but with `ttLOAN_BROKER_SET` and the `LoanBroker` owner as `Account`:
 
 ```
 SHA-512Half( TxType || Account || MPTokenIssuanceID || Sequence || Account || 0 )
@@ -451,7 +450,7 @@ SHA-512Half( TxType || Account || MPTokenIssuanceID || Sequence || Account || 0 
 
 ### A.2. `LoanSet` Context Hash
 
-Computed exactly as the XLS-96 `ConfidentialMPTSend` context hash, but with `ttLOAN_SET`, the `LoanBroker` pseudo-account as `Account`, the Borrower as `Destination`, and the Lending Balance's `ConfidentialBalanceVersion` as `Version`:
+Computed as the XLS-96 `ConfidentialMPTSend` context hash, but with `ttLOAN_SET`, the `LoanBroker` pseudo-account as `Account`, the Borrower as `Destination`, and the Lending Balance's `ConfidentialBalanceVersion` as `Version`:
 
 ```
 SHA-512Half( TxType || Account || MPTokenIssuanceID || Sequence || Destination || Version )
@@ -467,7 +466,7 @@ As A.2, with `ttCONFIDENTIAL_LOAN_PAY`, the Borrower as `Account`, the `LoanBrok
 
 ### A.4. `LoanBrokerSettle` Context Hash
 
-Computed exactly as the XLS-96 `ConfidentialMPTConvertBack` context hash, but with `ttLOAN_BROKER_SETTLE`, the `LoanBroker` pseudo-account as `Account`, and the Lending Balance's `ConfidentialBalanceVersion` as `Version`:
+Computed as the XLS-96 `ConfidentialMPTConvertBack` context hash, but with `ttLOAN_BROKER_SETTLE`, the `LoanBroker` pseudo-account as `Account`, and the Lending Balance's `ConfidentialBalanceVersion` as `Version`:
 
 ```
 SHA-512Half( TxType || Account || MPTokenIssuanceID || Sequence || Account || Version )
