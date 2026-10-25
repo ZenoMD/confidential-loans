@@ -1,0 +1,297 @@
+.spec-header {
+  padding-bottom: var(--header-top);
+}
+
+.spec-header .page-top {
+  align-items: center;
+}
+
+/* One column on a phone: heading, contents, body. Beside a wide body the contents stick. */
+.spec {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'head' 'toc' 'content';
+  gap: 40px var(--page-column-gap);
+  max-width: calc(var(--content-width) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding: var(--page-top) var(--gutter) var(--page-bottom);
+}
+
+@media (min-width: 1024px) {
+  .spec {
+    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-areas: 'toc head' 'toc content';
+    grid-template-rows: auto 1fr;
+  }
+
+  .spec-toc {
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+}
+
+.spec-head {
+  grid-area: head;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 820px;
+}
+
+.spec-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.spec-number {
+  font: var(--type-hash);
+  color: var(--mute);
+}
+
+.spec-status {
+  padding: 6px 12px;
+  border: 1px solid var(--key);
+  border-radius: var(--radius-pill);
+  color: var(--key);
+  font: var(--type-pill);
+}
+
+.spec-head h1 {
+  margin: 0;
+  font: var(--type-display-lg);
+  letter-spacing: var(--tracking-display-lg);
+}
+
+@media (max-width: 640px) {
+  .spec-head h1 {
+    font: var(--type-role);
+    letter-spacing: var(--tracking-role);
+  }
+}
+
+.spec-lede {
+  margin: 0;
+  font: var(--type-body-lg);
+  color: var(--mute);
+}
+
+.spec-meta {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 16px 20px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--surface-deep);
+  font: var(--type-body-sm);
+}
+
+.spec-meta div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.spec-meta dt {
+  color: var(--dim);
+  text-transform: capitalize;
+}
+
+.spec-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.spec-meta a,
+.spec-content a {
+  color: var(--key);
+}
+
+.spec-meta a:hover,
+.spec-content a:hover {
+  text-decoration: underline;
+}
+
+.spec-toc {
+  grid-area: toc;
+  align-self: start;
+  font: var(--type-body-sm);
+}
+
+@media (max-width: 1023px) {
+  .spec-toc {
+    padding: 16px 20px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-card);
+  }
+}
+
+.spec-toc-title {
+  margin: 0 0 12px;
+  color: var(--dim);
+  font: var(--type-nav);
+  letter-spacing: var(--tracking-ui);
+  text-transform: uppercase;
+}
+
+.spec-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.spec-toc ol ol {
+  margin: 2px 0 6px 12px;
+  padding-left: 10px;
+  border-left: 1px solid var(--rule);
+}
+
+.spec-toc a {
+  display: block;
+  padding: 4px 0;
+  color: var(--mute);
+}
+
+.spec-toc ol ol a {
+  color: var(--dim);
+  font: var(--type-caption);
+  padding: 3px 0;
+}
+
+.spec-toc a:hover,
+.spec-toc a[aria-current='location'] {
+  color: var(--ink);
+}
+
+.spec-toc a[aria-current='location'] {
+  font-weight: 600;
+}
+
+/* The room below lets a link to the last section scroll it to the top. */
+.spec-content {
+  grid-area: content;
+  max-width: 820px;
+  min-width: 0;
+  padding-bottom: calc(100vh - 160px);
+  font: 400 16px/1.7 var(--font-body);
+}
+
+.spec-content h2,
+.spec-content h3,
+.spec-content h4 {
+  scroll-margin-top: 24px;
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+.spec-content h2 {
+  margin: 56px 0 16px;
+  padding-top: 32px;
+  border-top: 1px solid var(--rule);
+  font-size: 28px;
+  line-height: 1.25;
+  letter-spacing: -0.28px;
+}
+
+.spec-content h2:first-child {
+  margin-top: 0;
+}
+
+.spec-content h3 {
+  margin: 36px 0 12px;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.spec-anchor {
+  margin-left: 4px;
+  color: var(--dim) !important;
+  opacity: 0;
+  text-decoration: none !important;
+}
+
+:is(h2, h3, h4):hover > .spec-anchor,
+.spec-anchor:focus-visible {
+  opacity: 1;
+}
+
+.spec-content p,
+.spec-content ul,
+.spec-content ol {
+  margin: 0 0 16px;
+}
+
+.spec-content ul,
+.spec-content ol {
+  padding-left: 24px;
+}
+
+.spec-content li {
+  margin: 6px 0;
+}
+
+.spec-content li::marker {
+  color: var(--dim);
+}
+
+.spec-content strong {
+  font-weight: 600;
+}
+
+.spec-content code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-elevated);
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.spec-content pre {
+  margin: 0 0 16px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--surface-deep);
+}
+
+.spec-content pre code {
+  padding: 0;
+  background: none;
+}
+
+/* A wide table scrolls on its own instead of widening the page. */
+.spec-content table {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 20px;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font: var(--type-body-sm);
+}
+
+.spec-content th,
+.spec-content td {
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.spec-content th {
+  background: var(--surface-elevated);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.spec-content td:first-child code {
+  white-space: nowrap;
+}
+
+.spec-content tbody tr:nth-child(even) {
+  background: var(--surface-deep);
+}

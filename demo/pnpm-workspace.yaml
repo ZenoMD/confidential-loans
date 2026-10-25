@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAge: 1440
+# The xrpl.js fork, packed from its built checkout. xrpl depends on these two patched packages.
+overrides:
+  '@xrplf/mpt-crypto': file:vendor/xrplf-mpt-crypto-0.1.1.tgz
+  ripple-binary-codec: file:vendor/ripple-binary-codec-2.11.0.tgz

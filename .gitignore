@@ -3,3 +3,4 @@ dist/
 .env
 .env.*
 CLAUDE.local.md
+demo/scripts/state.json

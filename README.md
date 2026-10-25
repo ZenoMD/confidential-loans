@@ -1,25 +1,23 @@
 # Confidential Loans
 
-Institutional lending on the XRP Ledger where loan balances stay encrypted. The project combines the
-[Lending Protocol (XLS-66)](https://xls.xrpl.org/xls/XLS-0066-lending-protocol.html) with
-[Confidential MPTs (XLS-96)](https://xls.xrpl.org/xls/XLS-0096-confidential-mpt.html): depositors fund
-a vault, a loan broker lends from it, and the borrower's principal and repayments move as ElGamal
-ciphertexts that only the parties, the issuer and an auditor can decrypt.
+- [The XLS-style spec](https://zeno-confidential-loans.pages.dev/#/spec)
+- [Public demo app](https://zeno-confidential-loans.pages.dev/)
+- [Rippled fork implementing the spec](https://github.com/ZenoMD/rippled/tree/confidential-loans)
+- [xrpl.js fork](https://github.com/ZenoMD/xrpl.js/tree/confidential-loans)
+- public devnet with confidential loans amendment enabled
+    - WS: wss://xrpl-confidential-loans.zeno.md
+    - RPC: https://rpc.xrpl-confidential-loans.zeno.md
+    - explorer : https://custom.xrpl.org/xrpl-confidential-loans.zeno.md:443
 
-## Network
+## Run the demo
 
-Everything here runs against the team devnet, a rippled node with the lending and confidential
-transfer amendments enabled.
+You can use a [public deployment of the demo](https://zeno-confidential-loans.pages.dev/)
 
-| Service | Endpoint |
-|---|---|
-| WebSocket | `wss://xrpl-confidential-loans.zeno.md` |
-| JSON-RPC | `https://rpc.xrpl-confidential-loans.zeno.md` |
-| Faucet | `https://faucet.xrpl-confidential-loans.zeno.md/accounts` |
+or
 
-## Layout
+Run from `demo/` with Node 22.
 
-| Path | Contents |
-|---|---|
-| `frontend/apps/web` | Web app (Vite + React) |
-| `frontend/packages/core` | All ledger access; the only package that imports `xrpl` |
+```sh
+pnpm install
+pnpm run dev
+```

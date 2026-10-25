@@ -1,0 +1,65 @@
+# Builds demo/apps/web and uploads it to the Cloudflare Pages project `zeno-confidential-loans`.
+# Pushes to main deploy to production; pull requests and manual runs on other branches make preview
+# deployments named after the branch.
+name: Deploy demo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - demo/**
+      - SPEC.md
+      - .github/workflows/deploy-demo.yml
+  pull_request:
+    paths:
+      - demo/**
+      - SPEC.md
+      - .github/workflows/deploy-demo.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-demo-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Pull requests from forks get no secrets, so they cannot deploy.
+    if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # Reads the pnpm version from packageManager.
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: demo/package.json
+
+      # Reads the Node version from volta.node.
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: demo/package.json
+          cache: pnpm
+          cache-dependency-path: demo/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Branch and commit go through env, not inline expressions, so a branch name cannot inject
+      # shell. On a pull request, ref_name and sha name the merge ref, so use the head branch.
+      - name: Upload to Cloudflare Pages
+        run: >
+          npx --yes wrangler@4.152.0 pages deploy apps/web/dist
+          --project-name=zeno-confidential-loans
+          --branch="$BRANCH"
+          --commit-hash="$COMMIT"
+        env:
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

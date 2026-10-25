@@ -1,0 +1,29 @@
+.role {
+  width: 320px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+  text-align: right;
+  color: var(--ink);
+}
+
+.role-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.role-who {
+  margin: 0;
+  font: var(--type-role);
+  letter-spacing: var(--tracking-role);
+}
+
+.role-action {
+  margin: 0;
+  font: var(--type-body-lg);
+  color: var(--mute);
+}
