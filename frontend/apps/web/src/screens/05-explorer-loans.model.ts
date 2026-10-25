@@ -22,7 +22,8 @@ export interface ExplorerRow {
   readonly hash: string
   /** The hash as the narrow Hash column prints it. */
   readonly hashText: string
-  readonly href: string
+  /** The explorer page, or undefined when there is none and the hash prints as plain text. */
+  readonly href: string | undefined
 }
 
 export interface Link {
@@ -97,7 +98,7 @@ function row(r: TxRecord): ExplorerRow {
     amount: amountCell(r),
     hash: r.hash,
     hashText: `${r.hash.slice(0, 6)}…${r.hash.slice(-4)}`,
-    href: r.explorerUrl,
+    href: r.explorerUrl === '' ? undefined : r.explorerUrl,
   }
 }
 

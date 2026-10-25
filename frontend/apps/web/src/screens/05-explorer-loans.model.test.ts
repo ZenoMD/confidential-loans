@@ -158,6 +158,13 @@ describe('explorerLoans', () => {
     assert.equal(row?.href, 'https://x/1')
   })
 
+  it('gives a hash with no explorer link no href, so it prints as plain text', () => {
+    const log = [record({ step: 1, type: 'LoanBrokerSet', hash: HASH, explorerUrl: '' })]
+    const [row] = explorerLoans('outsider', snapshot('outsider', log)).rows
+    assert.equal(row?.hashText, 'A1B2C3…8F90')
+    assert.equal(row?.href, undefined)
+  })
+
   it('leaves out failed transactions and the steps after 4', () => {
     const log = [
       record({ step: 1, type: 'LoanBrokerSet' }),
