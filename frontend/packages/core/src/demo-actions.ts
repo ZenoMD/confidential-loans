@@ -1,5 +1,4 @@
 import {
-  prepareConfidentialLoanBrokerSet,
   prepareConfidentialLoanPay,
   prepareConfidentialLoanSet,
   prepareConfidentialMergeInbox,
@@ -76,7 +75,8 @@ export interface ActionContext {
 }
 
 export interface Actions {
-  perform(action: Action): Promise<void>
+  /** Runs the action. Returns the validated transaction's hash; undefined when none was sent. */
+  perform(action: Action): Promise<string | undefined>
   /** The ElGamal keypairs a viewer holds. */
   keysOf(viewer: Viewer): readonly ConfidentialKeypair[]
 }
@@ -95,9 +95,13 @@ async function build<T>(work: () => T | Promise<T>): Promise<T> {
   }
 }
 
-async function submitBlob(client: Client, signed: { tx_blob: string; hash: string }) {
+/** Submits a signed blob and waits for validation. Returns the hash. */
+async function submitBlob(
+  client: Client,
+  signed: { tx_blob: string; hash: string },
+): Promise<string> {
   try {
-    await submitSigned(client, signed)
+    return (await submitSigned(client, signed)).hash
   } catch (error) {
     if (error instanceof TxFailed) {
       const options =
@@ -151,10 +155,8 @@ class ActionRunner implements Actions {
     }
   }
 
-  async perform(action: Action): Promise<void> {
+  async perform(action: Action): Promise<string | undefined> {
     switch (action.type) {
-      case 'LoanBrokerSet':
-        return this.createBroker(action.debtMaximum)
       case 'VaultDeposit':
         return this.deposit(action.depositor, action.amount)
       case 'LoanBrokerDraw': {
@@ -172,12 +174,13 @@ class ActionRunner implements Actions {
         )
       }
       case 'LoanSetSign':
-        return this.signLoan(action.borrower, action.terms)
+        await this.signLoan(action.borrower, action.terms)
+        return undefined
       case 'LoanSetCosign':
         return this.cosignLoan(action.borrower)
       case 'LoanSetWithdraw':
         this.context.offer.current = undefined
-        return
+        return undefined
       case 'ConfidentialMPTMergeInbox': {
         const wallet = this.wallets[action.borrower]
         const params = { account: wallet.address, mptIssuanceID: this.kit.mptIssuanceID }
@@ -200,9 +203,9 @@ class ActionRunner implements Actions {
   private async send(
     tx: SubmittableTransaction | Promise<SubmittableTransaction>,
     by: Wallet,
-  ): Promise<void> {
+  ): Promise<string> {
     const signed = await build(async () => by.sign(await this.client.autofill(await tx)))
-    await submitBlob(this.client, signed)
+    return submitBlob(this.client, signed)
   }
 
   private brokerParams(): { account: string; loanBrokerID: string } {
@@ -231,20 +234,7 @@ class ActionRunner implements Actions {
     return shown.value
   }
 
-  private createBroker(debtMaximum: bigint): Promise<void> {
-    const params = {
-      account: this.broker.address,
-      vaultID: this.kit.vaultID,
-      brokerKeypair: this.keys.brokerA,
-      debtMaximum: debtMaximum.toString(),
-    }
-    return this.send(
-      build(() => prepareConfidentialLoanBrokerSet(this.client, params)),
-      this.broker,
-    )
-  }
-
-  private deposit(depositor: Depositor, amount: bigint): Promise<void> {
+  private deposit(depositor: Depositor, amount: bigint): Promise<string> {
     const wallet = this.wallets[depositor]
     const tx = {
       TransactionType: 'VaultDeposit',
@@ -281,17 +271,17 @@ class ActionRunner implements Actions {
     }
   }
 
-  private async cosignLoan(borrower: Borrower): Promise<void> {
+  private async cosignLoan(borrower: Borrower): Promise<string> {
     const offer = this.context.offer.current
     if (offer?.borrower !== borrower) throw unavailable(`No offer to ${borrower} to co-sign`)
     const cosigned = await build(() =>
       signLoanSetByCounterparty(this.wallets[borrower], offer.blob),
     )
     this.context.offer.current = undefined
-    await submitBlob(this.client, cosigned)
+    return submitBlob(this.client, cosigned)
   }
 
-  private async payLoan(loanID: string, mode: 'installment' | 'full'): Promise<void> {
+  private async payLoan(loanID: string, mode: 'installment' | 'full'): Promise<string> {
     const entry = this.loan(loanID)
     const borrower = this.borrowerOf(entry.Borrower)
     const key = this.keys[borrower]
@@ -309,7 +299,7 @@ class ActionRunner implements Actions {
       fullPayment: mode === 'full',
       borrowerKeypair: key,
     }
-    await this.send(
+    return this.send(
       build(() => prepareConfidentialLoanPay(this.client, params)),
       this.wallets[borrower],
     )
@@ -321,19 +311,19 @@ class ActionRunner implements Actions {
     throw unavailable(`${address} is not a demo borrower`)
   }
 
-  private async settle(): Promise<void> {
+  private async settle(): Promise<string> {
     const params = this.brokerParams()
     const spending = this.context.state().broker?.lendingBalance?.ConfidentialBalanceSpending
     const amount = await this.decrypt(spending, this.keys.brokerA, 'The Lending Balance')
     if (amount === 0n) throw unavailable('The Lending Balance spending is 0: merge the inbox first')
     const settle = { ...params, amount, brokerKeypair: this.keys.brokerA }
-    await this.send(
+    return this.send(
       build(() => prepareLoanBrokerSettle(this.client, settle)),
       this.broker,
     )
   }
 
-  private manage(loanID: string, flag: 'impair' | 'default'): Promise<void> {
+  private manage(loanID: string, flag: 'impair' | 'default'): Promise<string> {
     const tx = {
       TransactionType: 'LoanManage',
       Account: this.broker.address,
@@ -343,7 +333,7 @@ class ActionRunner implements Actions {
     return this.send(tx, this.broker)
   }
 
-  private withdraw(depositor: Depositor): Promise<void> {
+  private withdraw(depositor: Depositor): Promise<string> {
     const { vault, shareTokens } = this.context.state()
     const shares = shareTokens[depositor]?.MPTAmount ?? '0'
     if (BigInt(shares) === 0n) throw unavailable(`${depositor} holds no shares`)

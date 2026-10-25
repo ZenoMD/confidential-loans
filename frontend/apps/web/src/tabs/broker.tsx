@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import type { Time } from '@confidential-loans/core/demo-ledger'
+import '#web/Cta.css'
 import { Cta } from '#web/Cta.tsx'
+import { DurationField } from '#web/DurationField.tsx'
 import { useSnapshot } from '#web/ledger.tsx'
 import { LoanCard } from '#web/LoanCard.tsx'
+import { Modal } from '#web/Modal.tsx'
 import { NAMES } from '#web/names.ts'
 import { Page } from '#web/Page.tsx'
 import { Role } from '#web/Role.tsx'
@@ -39,10 +43,21 @@ function LendingBalance({ m, edit }: { m: BrokerModel; edit: Edit }) {
   )
 }
 
-function OfferForm({ m, ui, edit }: { m: BrokerModel; ui: BrokerUi; edit: Edit }) {
+/** The new loan form, in a dialog. Signing closes it once the offer is held. */
+function OfferDialog({
+  m,
+  ui,
+  edit,
+  onClose,
+}: {
+  m: BrokerModel
+  ui: BrokerUi
+  edit: Edit
+  onClose: () => void
+}) {
   return (
-    <section className="section" aria-labelledby="offer">
-      <h2 id="offer" className="section-heading">
+    <Modal labelledBy="new-loan" onClose={onClose}>
+      <h2 id="new-loan" className="section-heading">
         New loan
       </h2>
       <Toggle
@@ -66,8 +81,41 @@ function OfferForm({ m, ui, edit }: { m: BrokerModel; ui: BrokerUi; edit: Edit }
           />
         ))}
       </div>
-      <Cta action={m.offer.action} label={m.offer.label} />
-      {m.pending !== undefined && (
+      <div className="fields">
+        {m.offer.durations.map((term) => (
+          <DurationField
+            key={term.key}
+            id={`term-${term.key}`}
+            label={term.label}
+            value={term.value}
+            onChange={(value) => edit({ terms: { ...ui.terms, [term.key]: value } })}
+          />
+        ))}
+      </div>
+      <Stats amounts={m.offer.derived} />
+      <div className="actions">
+        <Cta action={m.offer.action} label={m.offer.label} />
+        <button type="button" className="pill" onClick={onClose}>
+          Cancel
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
+/** The held offer, if any, and the button that opens the new loan form. */
+function Offers({ m, onNewLoan }: { m: BrokerModel; onNewLoan: () => void }) {
+  return (
+    <section className="section" aria-labelledby="offers">
+      <h2 id="offers" className="section-heading">
+        Offers
+      </h2>
+      <button type="button" className="cta-button" onClick={onNewLoan}>
+        New loan
+      </button>
+      {m.pending === undefined ? (
+        <p className="section-note">No offer is waiting for a co-signature.</p>
+      ) : (
         <article className="card" aria-label={m.pending.title}>
           <header className="card-head">
             <h3 className="card-title">{m.pending.title}</h3>
@@ -89,31 +137,28 @@ function OfferForm({ m, ui, edit }: { m: BrokerModel; ui: BrokerUi; edit: Edit }
 /** The Broker: the LoanBroker and its Lending Balance, new loans, and every open loan. */
 export function BrokerTab() {
   const [ui, setUi] = useState(brokerInitial)
+  // The form opens over the offer held at the time; a new signature replaces it and closes the form.
+  const [offering, setOffering] = useState<{ readonly over: Time | undefined } | null>(null)
   const edit: Edit = (change) => setUi({ ...ui, ...change })
   const snapshot = useSnapshot('brokerA')
+  const signedAt = snapshot?.offer?.signedAt
+  const formOpen = offering !== null && offering.over === signedAt
   const m = snapshot === null ? null : brokerTab(snapshot, ui)
-  const aside = <Role role="broker" who={NAMES.brokerA} action="Runs the vault's LoanBroker" />
+  const aside = (
+    <Role
+      role="broker"
+      who={NAMES.brokerA}
+      action="Runs the vault's LoanBroker"
+      address={snapshot?.addresses.brokerA}
+    />
+  )
   return (
     <Page tab="broker" aside={aside}>
-      {m?.create !== undefined && (
-        <section className="section" aria-labelledby="create">
-          <h2 id="create" className="section-heading">
-            LoanBroker
-          </h2>
-          <WholeField
-            id="debt-maximum"
-            label="Debt maximum (0 for none)"
-            unit="$"
-            text={m.create.text}
-            onChange={(debtMaximum) => edit({ debtMaximum })}
-          />
-          <Cta action={m.create.action} label={m.create.label} />
-        </section>
-      )}
       {m !== null && (
         <>
           <LendingBalance m={m} edit={edit} />
-          <OfferForm m={m} ui={ui} edit={edit} />
+          <Offers m={m} onNewLoan={() => setOffering({ over: signedAt })} />
+          {formOpen && <OfferDialog m={m} ui={ui} edit={edit} onClose={() => setOffering(null)} />}
           <section className="section" aria-labelledby="loans">
             <h2 id="loans" className="section-heading">
               Loans

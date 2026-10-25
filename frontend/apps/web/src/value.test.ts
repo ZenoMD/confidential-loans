@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { formatAmount, formatCount, parseWhole, valueView } from './value.ts'
+import { formatAmount, formatCount, parsePercent, parseWhole, valueView } from './value.ts'
 
 describe('formatAmount', () => {
   it('prefixes $ and groups thousands', () => {
@@ -60,5 +60,22 @@ describe('formatCount', () => {
   it('groups thousands without a currency sign', () => {
     assert.equal(formatCount(1500n), '1,500')
     assert.equal(formatCount(60), '60')
+  })
+})
+
+describe('parsePercent', () => {
+  it('reads up to two decimals as hundredths of a percent', () => {
+    assert.deepEqual(parsePercent('5.25%'), { text: '5.25', hundredths: 525n })
+    assert.deepEqual(parsePercent('10'), { text: '10', hundredths: 1000n })
+    assert.deepEqual(parsePercent('.5'), { text: '.5', hundredths: 50n })
+  })
+
+  it('drops a third decimal and a second point', () => {
+    assert.deepEqual(parsePercent('1.234'), { text: '1.23', hundredths: 123n })
+    assert.deepEqual(parsePercent('1.2.3'), { text: '1.23', hundredths: 123n })
+  })
+
+  it('reads an empty field as 0', () => {
+    assert.deepEqual(parsePercent(''), { text: '', hundredths: 0n })
   })
 })

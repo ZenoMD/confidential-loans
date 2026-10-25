@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import './Role.css'
+import { Address } from './Address.tsx'
 
 export type RoleKind = 'broker' | 'depositor' | 'borrower'
 
@@ -48,14 +49,23 @@ export function RoleIcon({ role, size, stroke }: { role: RoleKind; size: number;
   )
 }
 
-/** Who acts on the screen: icon, name as the page heading, and what they do. */
-export function Role({ role, who, action }: { role: RoleKind; who: string; action: string }) {
+interface RoleProps {
+  readonly role: RoleKind
+  readonly who: string
+  readonly action: string
+  /** The account's address, once the demo is open. */
+  readonly address?: string | undefined
+}
+
+/** Who acts on the screen: icon, name as the page heading, what they do, and their account. */
+export function Role({ role, who, action, address }: RoleProps) {
   return (
     <div className="role">
       <RoleIcon role={role} size={64} stroke={1.5} />
       <div className="role-text">
         <h1 className="role-who">{who}</h1>
         <p className="role-action">{action}</p>
+        {address !== undefined && <Address address={address} />}
       </div>
     </div>
   )

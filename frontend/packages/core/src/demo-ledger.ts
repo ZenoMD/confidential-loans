@@ -27,19 +27,8 @@ export type Phase = 'subscription' | 'investment' | 'redemption'
 /** A moment in Unix milliseconds, ready for `new Date(time)`. */
 export type Time = number
 
-/** The terms the loan form prefills: one full payment 60 s after the start, 60 s grace. */
-export const DEMO_TERMS: LoanTerms = Object.freeze({
-  principal: 100_000n,
-  amountOwed: 105_000n,
-  periodicPayment: 105_000n,
-  paymentTotal: 1,
-  paymentInterval: 60,
-  gracePeriod: 60,
-})
-
 /** The amounts the forms prefill. */
 export const DEMO_AMOUNTS = Object.freeze({
-  debtMaximum: 250_000n,
   deposit: 150_000n,
   draw: 200_000n,
 })
@@ -49,8 +38,6 @@ export type Public = { readonly visibility: 'public'; readonly value: bigint }
 
 /** Something the demo can do. Each submits one transaction, except the offer sign and withdraw. */
 export type Action =
-  /** Creates the confidential LoanBroker for the kit's vault. 0 means no debt cap. */
-  | { readonly type: 'LoanBrokerSet'; readonly debtMaximum: bigint }
   | { readonly type: 'VaultDeposit'; readonly depositor: Depositor; readonly amount: bigint }
   /** Moves a public amount from the vault into the Lending Balance inbox. */
   | { readonly type: 'LoanBrokerDraw'; readonly amount: bigint }
@@ -142,6 +129,8 @@ export interface DepositorView {
 /** Everything the tabs render, read from one validated ledger and seen by one viewer. */
 export interface Snapshot {
   readonly viewer: Viewer
+  /** Each demo account's classic address. */
+  readonly addresses: Readonly<Record<Signer, string>>
   readonly ledgerIndex: number
   /** The ledger's close time. Gates compare against it, never against the local clock. */
   readonly now: Time
@@ -157,7 +146,7 @@ export interface Snapshot {
     /** Withdrawals open at this moment. */
     readonly redemptionDate: Time
   }
-  /** Undefined until the Broker creates it. */
+  /** Undefined until Initialize creates it. */
   readonly broker: BrokerView | undefined
   /** The LoanBroker's loans, oldest first. */
   readonly loans: readonly LoanView[]
@@ -198,9 +187,10 @@ export interface Demo {
   /**
    * Runs one action: builds, signs, submits and waits for validation, then rereads the ledger.
    *
+   * @returns The validated transaction's hash; undefined for the actions that submit nothing.
    * @throws {ActionFailed} With the engine code or the reason nothing was submitted.
    */
-  act(action: Action): Promise<void>
+  act(action: Action): Promise<string | undefined>
   /** Stops following ledger closes. The ledger connection stays open; its owner closes it. */
   close(): void
 }
@@ -218,7 +208,7 @@ function blocked(why: string): Gate {
   return { open: false, reason: 'blocked', why }
 }
 const DONE: Gate = Object.freeze({ open: false, reason: 'done' })
-const NO_BROKER = 'Create the LoanBroker first'
+const NO_BROKER = 'The vault has no LoanBroker: clear data and initialize again'
 
 const SECOND = 1000
 /** XLS-66 closed-ended gate: the final payment must precede RedemptionDate by this much. */
@@ -323,8 +313,6 @@ function loanGate(s: Snapshot, loanID: string, check: (loan: LoanView) => Gate):
  */
 export function gate(s: Snapshot, action: Action): Gate {
   switch (action.type) {
-    case 'LoanBrokerSet':
-      return s.broker === undefined ? open() : DONE
     case 'VaultDeposit':
       return depositGate(s, action.depositor, action.amount)
     case 'LoanBrokerDraw':
@@ -377,7 +365,7 @@ function describe(error: unknown): string {
  * Opens the demo for a kit on a live ledger connection. It reads the whole demo state, then
  * rereads it after every validated ledger and every action.
  *
- * @param kit - Accounts, keys and ledger IDs from `scripts/export-kit.ts`.
+ * @param kit - Accounts, keys and ledger IDs: `kitOf` a deployment.
  * @param ledger - The connection from `connectLedger`.
  * @returns The demo, with its first snapshot ready.
  * @throws When the first read fails, for example because the kit's vault does not exist.
@@ -429,7 +417,7 @@ export async function openDemo(kit: Kit, ledger: Ledger): Promise<Demo> {
       submitting = action
       changed()
       try {
-        await actions.perform(action)
+        return await actions.perform(action)
       } finally {
         await refresh()
         submitting = undefined

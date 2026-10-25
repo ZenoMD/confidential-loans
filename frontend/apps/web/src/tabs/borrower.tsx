@@ -20,7 +20,12 @@ export function BorrowerTab({ borrower, onBorrower }: BorrowerTabProps) {
   const m = snapshot === null ? null : borrowerTab(snapshot, borrower)
   const aside = (
     <>
-      <Role role="borrower" who={NAMES[borrower]} action="Borrows and repays confidentially" />
+      <Role
+        role="borrower"
+        who={NAMES[borrower]}
+        action="Borrows and repays confidentially"
+        address={snapshot?.addresses[borrower]}
+      />
       <Toggle
         label="Borrower"
         options={[

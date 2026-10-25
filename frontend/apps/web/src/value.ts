@@ -28,6 +28,21 @@ export function parseWhole(typed: string): Whole {
   return { text, value: BigInt(text === '' ? 0 : text) }
 }
 
+/** What a percentage field holds: the text typed, and its value in hundredths of a percent. */
+export interface Percent {
+  readonly text: string
+  readonly hundredths: bigint
+}
+
+/** Keeps the digits and one decimal point of what was typed, with at most two decimals. */
+export function parsePercent(typed: string): Percent {
+  const [whole = '', ...rest] = typed.replace(/[^\d.]/g, '').split('.')
+  const decimals = rest.join('').slice(0, 2)
+  const text = rest.length > 0 ? `${whole}.${decimals}` : whole
+  const hundredths = BigInt(whole === '' ? 0 : whole) * 100n + BigInt(decimals.padEnd(2, '0'))
+  return { text, hundredths }
+}
+
 /** Groups the thousands of a count, such as shares: `1,500`. */
 export function formatCount(value: bigint | number): string {
   return value.toLocaleString('en-US')

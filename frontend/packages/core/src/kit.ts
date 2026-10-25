@@ -1,31 +1,55 @@
-import { deriveConfidentialKeypair, isValidClassicAddress } from 'xrpl'
+import { isValidClassicAddress } from 'xrpl'
 
-import { walletFromSeed } from './accounts.ts'
+import { confidentialKeypair, newSeed, walletFromSeed } from './accounts.ts'
 import type { KeyHolder, Signer } from './demo-ledger.ts'
 
-/** The kit format version this module reads and writes. */
-const KIT_VERSION = 1
+/** The format version this module reads and writes. */
+const DEPLOYMENT_VERSION = 2
 
-const SIGNERS = [
+/** The token issuer plus the demo's signers: every account a deployment funds. */
+export type Role = 'issuer' | Signer
+
+export const ROLES = [
+  'issuer',
   'brokerA',
   'depositorA',
   'depositorB',
   'borrowerA',
   'borrowerB',
-] as const satisfies readonly Signer[]
-const KEY_HOLDERS = [
-  'brokerA',
-  'borrowerA',
-  'borrowerB',
-  'mptAuditor',
-  'loanAuditor',
-] as const satisfies readonly KeyHolder[]
-const FIELDS = new Set(['kit', 'mptIssuanceID', 'vaultID', 'accounts', 'elgamal'])
+] as const satisfies readonly Role[]
+
+/** The ElGamal keys with a seed of their own, not derived from an account's seed. */
+export type NamedKey = 'brokerA' | 'mptAuditor' | 'loanAuditor'
+
+const NAMED_KEYS = ['brokerA', 'mptAuditor', 'loanAuditor'] as const satisfies readonly NamedKey[]
+
+/** The closed-ended vault of the current run. Dates are Ripple Epoch seconds. */
+export interface RunVault {
+  readonly vaultID: string
+  readonly subscriptionDate: number
+  readonly redemptionDate: number
+}
 
 /**
- * Everything the browser needs to play every role on the devnet: the ledger IDs that setup
- * created, each signer's account, and each ElGamal key. It holds secrets: the app keeps it in
- * `sessionStorage` only, never in the bundle, a `VITE_*` variable or a URL.
+ * What the browser deployed to the devnet: every seed, and the ledger IDs once created. It holds
+ * secrets: the app keeps it in `localStorage` only, never in the bundle, a `VITE_*` variable or a
+ * URL.
+ */
+export interface Deployment {
+  /** The family seed of each account. The issuer's and each borrower's also derive its ElGamal key. */
+  readonly seeds: Readonly<Record<Role, string>>
+  /**
+   * The family seed of each ElGamal key that has no account: the Broker Key, which encrypts the
+   * Lending Balance, the issuance's MPT Auditor key and the Loan Auditor key.
+   */
+  readonly keySeeds: Readonly<Record<NamedKey, string>>
+  readonly mptIssuanceID: string | undefined
+  readonly vault: RunVault | undefined
+}
+
+/**
+ * Everything the browser needs to play every role in one run: the ledger IDs, each signer's
+ * account, and each ElGamal key.
  */
 export interface Kit {
   /** The confidential MPT issuance the vault holds. */
@@ -34,36 +58,71 @@ export interface Kit {
   readonly vaultID: string
   /** Each signer's classic address and the family seed that derives it. */
   readonly accounts: Readonly<Record<Signer, { readonly address: string; readonly seed: string }>>
-  /**
-   * The family seed of each ElGamal key: the Broker Key (`CONF_SEED_BROKERA`), each borrower's
-   * `HolderEncryptionKey`, the issuance's MPT Auditor key (`CONF_SEED_AUDITOR`) and the Loan
-   * Auditor key (`CONF_SEED_LOAN_AUDITOR`).
-   */
+  /** The family seed of each ElGamal key. */
   readonly elgamal: Readonly<Record<KeyHolder, string>>
 }
 
+/** Generates fresh seeds for a deployment that has nothing on the ledger yet. */
+export function newDeployment(): Deployment {
+  return {
+    seeds: Object.fromEntries(ROLES.map((role) => [role, newSeed()])) as Deployment['seeds'],
+    keySeeds: Object.fromEntries(
+      NAMED_KEYS.map((key) => [key, newSeed()]),
+    ) as Deployment['keySeeds'],
+    mptIssuanceID: undefined,
+    vault: undefined,
+  }
+}
+
 /**
- * Writes a kit as the JSON text `parseKit` reads.
+ * The kit for a deployment's current run.
  *
- * @param kit - The kit to write.
- * @returns Pretty-printed JSON with a format version.
+ * @param deployment - A deployment with its token and vault created.
+ * @returns The kit, or undefined while either is missing.
  */
-export function serializeKit(kit: Kit): string {
-  return `${JSON.stringify({ kit: KIT_VERSION, ...kit }, null, 2)}\n`
+export function kitOf({ seeds, keySeeds, mptIssuanceID, vault }: Deployment): Kit | undefined {
+  if (mptIssuanceID === undefined || vault === undefined) return undefined
+  const account = (role: Signer) => ({
+    address: walletFromSeed(seeds[role]).address,
+    seed: seeds[role],
+  })
+  return {
+    mptIssuanceID,
+    vaultID: vault.vaultID,
+    accounts: {
+      brokerA: account('brokerA'),
+      depositorA: account('depositorA'),
+      depositorB: account('depositorB'),
+      borrowerA: account('borrowerA'),
+      borrowerB: account('borrowerB'),
+    },
+    elgamal: {
+      brokerA: keySeeds.brokerA,
+      borrowerA: seeds.borrowerA,
+      borrowerB: seeds.borrowerB,
+      mptAuditor: keySeeds.mptAuditor,
+      loanAuditor: keySeeds.loanAuditor,
+    },
+  }
+}
+
+/** Writes a deployment as the JSON text `parseDeployment` reads. */
+export function serializeDeployment(deployment: Deployment): string {
+  return JSON.stringify({ version: DEPLOYMENT_VERSION, ...deployment })
 }
 
 type Json = Record<string, unknown>
 
 function object(value: unknown, path: string): Json {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    throw new Error(`Invalid kit: ${path}: expected an object, got ${String(value)}`)
+    throw new Error(`Invalid deployment: ${path}: expected an object`)
   }
   return value as Json
 }
 
 function hexId(value: unknown, path: string, length: number): string {
   if (typeof value !== 'string' || !new RegExp(`^[0-9A-F]{${length}}$`, 'i').test(value)) {
-    throw new Error(`Invalid kit: ${path}: expected ${length} hex digits, got ${String(value)}`)
+    throw new Error(`Invalid deployment: ${path}: expected ${length} hex digits`)
   }
   return value.toUpperCase()
 }
@@ -71,58 +130,62 @@ function hexId(value: unknown, path: string, length: number): string {
 function familySeed(value: unknown, path: string): string {
   try {
     if (typeof value !== 'string') throw new TypeError('not a string')
-    deriveConfidentialKeypair(value)
+    confidentialKeypair(value)
+    if (!isValidClassicAddress(walletFromSeed(value).address)) throw new Error('no address')
     return value
   } catch {
-    throw new Error(`Invalid kit: ${path}: expected a family seed, got ${String(value)}`)
+    throw new Error(`Invalid deployment: ${path}: expected a family seed`)
   }
 }
 
-function signerAccount(value: unknown, path: string): { address: string; seed: string } {
-  const entry = object(value, path)
-  const { address } = entry
-  if (typeof address !== 'string' || !isValidClassicAddress(address)) {
-    throw new Error(`Invalid kit: ${path}.address: expected a classic address`)
+function seedsOf<K extends string>(value: unknown, keys: readonly K[], path: string) {
+  const json = object(value, path)
+  return Object.fromEntries(
+    keys.map((key) => [key, familySeed(json[key], `${path}.${key}`)]),
+  ) as Record<K, string>
+}
+
+function vaultOf(value: unknown): RunVault | undefined {
+  if (value === undefined) return undefined
+  const json = object(value, 'vault')
+  const date = (key: string): number => {
+    const date = json[key]
+    if (typeof date !== 'number' || !Number.isSafeInteger(date)) {
+      throw new Error(`Invalid deployment: vault.${key}: expected whole seconds`)
+    }
+    return date
   }
-  const seed = familySeed(entry['seed'], `${path}.seed`)
-  if (walletFromSeed(seed).address !== address) {
-    throw new Error(`Invalid kit: ${path}.seed does not derive ${path}.address`)
+  return {
+    vaultID: hexId(json['vaultID'], 'vault.vaultID', 64),
+    subscriptionDate: date('subscriptionDate'),
+    redemptionDate: date('redemptionDate'),
   }
-  return { address, seed }
 }
 
 /**
- * Reads the kit that `scripts/export-kit.ts` prints, checking every field.
+ * Reads a deployment that `serializeDeployment` wrote, checking every field.
  *
- * @param text - The pasted JSON text.
- * @returns The kit.
- * @throws {Error} Naming the first field that is missing or malformed, a seed that does not
- *   derive its address, or a field the format does not have.
+ * @param text - The stored JSON text.
+ * @returns The deployment.
+ * @throws {Error} Naming the first field that is missing or malformed, or an unknown version.
  */
-export function parseKit(text: string): Kit {
+export function parseDeployment(text: string): Deployment {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
   } catch (error) {
-    throw new Error(`The kit is not JSON: ${String(error)}`, { cause: error })
+    throw new Error(`The deployment is not JSON: ${String(error)}`, { cause: error })
   }
-  const json = object(parsed, 'kit')
-  for (const key of Object.keys(json)) {
-    if (!FIELDS.has(key)) throw new Error(`Unknown kit field ${key}`)
+  const json = object(parsed, 'deployment')
+  if (json['version'] !== DEPLOYMENT_VERSION) {
+    throw new Error(`Invalid deployment: version: expected ${DEPLOYMENT_VERSION}`)
   }
-  if (json['kit'] !== KIT_VERSION) {
-    throw new Error(`Invalid kit: kit: expected ${KIT_VERSION}, got ${String(json['kit'])}`)
-  }
-  const accounts = object(json['accounts'], 'accounts')
-  const elgamal = object(json['elgamal'], 'elgamal')
+  const { mptIssuanceID } = json
   return {
-    mptIssuanceID: hexId(json['mptIssuanceID'], 'mptIssuanceID', 48),
-    vaultID: hexId(json['vaultID'], 'vaultID', 64),
-    accounts: Object.fromEntries(
-      SIGNERS.map((role) => [role, signerAccount(accounts[role], `accounts.${role}`)]),
-    ) as Kit['accounts'],
-    elgamal: Object.fromEntries(
-      KEY_HOLDERS.map((holder) => [holder, familySeed(elgamal[holder], `elgamal.${holder}`)]),
-    ) as Kit['elgamal'],
+    seeds: seedsOf(json['seeds'], ROLES, 'seeds'),
+    keySeeds: seedsOf(json['keySeeds'], NAMED_KEYS, 'keySeeds'),
+    mptIssuanceID:
+      mptIssuanceID === undefined ? undefined : hexId(mptIssuanceID, 'mptIssuanceID', 48),
+    vault: vaultOf(json['vault']),
   }
 }

@@ -4,6 +4,8 @@ import { gate } from '@confidential-loans/core/demo-ledger'
 import type { Action } from '@confidential-loans/core/demo-ledger'
 import { actionKey, ctaView, failureText } from './cta.ts'
 import { useDemo, useSnapshot } from './ledger.tsx'
+import { failureToast, successToast } from './toast.ts'
+import { useToast } from './Toasts.tsx'
 
 /**
  * The primary button that runs one demo action, with its pending, failed, gated and
@@ -11,6 +13,7 @@ import { useDemo, useSnapshot } from './ledger.tsx'
  */
 export function Cta({ action, label, small }: { action: Action; label: string; small?: boolean }) {
   const demo = useDemo()
+  const notify = useToast()
   const snapshot = useSnapshot('outsider')
   const [failure, setFailure] = useState<{ key: string; text: string }>()
   const running = useRef(false)
@@ -29,7 +32,15 @@ export function Cta({ action, label, small }: { action: Action; label: string; s
     setFailure(undefined)
     demo
       .act(action)
-      .catch((error: unknown) => setFailure({ key, text: failureText(error) }))
+      .then((hash) => {
+        const toast = successToast(action, hash)
+        if (toast !== undefined) notify(toast)
+      })
+      .catch((error: unknown) => {
+        setFailure({ key, text: failureText(error) })
+        const toast = failureToast(action, error)
+        if (toast !== undefined) notify(toast)
+      })
       .finally(() => {
         running.current = false
       })

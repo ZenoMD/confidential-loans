@@ -75,6 +75,22 @@
   color: var(--dim);
 }
 
+.field-unit-select {
+  flex: none;
+  height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--mute);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+.field-unit-select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
 .field-input {
   flex: 1;
   min-width: 0;
@@ -139,4 +155,89 @@
   .card {
     padding: 16px;
   }
+}
+
+.stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stage {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  font: var(--type-body-sm);
+  color: var(--dim);
+}
+
+.stage-mark {
+  flex: none;
+  width: 64px;
+  font: var(--type-control-on);
+  line-height: inherit;
+}
+
+.stage[data-state='done'] {
+  color: var(--mute);
+}
+
+.stage[data-state='running'] {
+  color: var(--ink);
+}
+
+.stage[data-state='failed'] {
+  color: var(--loss);
+}
+
+.modal {
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  padding: 32px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-card);
+  background: var(--surface-elevated);
+  color: var(--ink);
+}
+
+.modal::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 20px;
+  }
+}
+
+.tx-list {
+  max-height: 168px;
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tx-list a {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font: var(--type-hash);
+  color: var(--mute);
+}
+
+.tx-list a:hover {
+  color: var(--ink);
+}
+
+.tx-type {
+  color: var(--ink);
 }

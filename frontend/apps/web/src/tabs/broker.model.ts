@@ -1,54 +1,74 @@
-import { DEMO_AMOUNTS, DEMO_TERMS } from '@confidential-loans/core/demo-ledger'
+import { DEMO_AMOUNTS } from '@confidential-loans/core/demo-ledger'
 import type { Borrower, LoanTerms, Snapshot } from '@confidential-loans/core/demo-ledger'
 import { formatClock } from '#web/cta.ts'
 import type { Command } from '#web/cta.ts'
 import { loanCard, termsCard } from '#web/loan.ts'
 import type { LoanCardModel } from '#web/loan.ts'
+import { secondsOf } from '#web/duration.ts'
+import type { DurationInput } from '#web/duration.ts'
 import { NAMES } from '#web/names.ts'
-import { parseWhole } from '#web/value.ts'
+import { parsePercent, parseWhole } from '#web/value.ts'
 import type { Fact, LabelledAmount } from '#web/value.ts'
 
-export type TermField = keyof LoanTerms
+/** The loan terms the Broker types. The amount owed and periodic payment follow from them. */
+export interface OfferInputs {
+  readonly principal: string
+  /** Percent a year, simple interest. */
+  readonly interestRate: string
+  readonly paymentTotal: string
+  readonly paymentInterval: DurationInput
+  readonly gracePeriod: DurationInput
+}
 
 /** What the Broker has typed. */
 export interface BrokerUi {
-  readonly debtMaximum: string
   readonly draw: string
   readonly borrower: Borrower
-  readonly terms: Readonly<Record<TermField, string>>
+  readonly terms: OfferInputs
 }
 
-/** The agreed amounts and demo terms, offered to Borrower A. */
+/**
+ * The agreed draw, and a loan to Borrower A: 100,000 at 10 % a year, repaid daily over a week,
+ * with a day's grace. It fits the default 30-day Investment.
+ */
 export const brokerInitial: BrokerUi = {
-  debtMaximum: String(DEMO_AMOUNTS.debtMaximum),
   draw: String(DEMO_AMOUNTS.draw),
   borrower: 'borrowerA',
   terms: {
-    principal: String(DEMO_TERMS.principal),
-    amountOwed: String(DEMO_TERMS.amountOwed),
-    periodicPayment: String(DEMO_TERMS.periodicPayment),
-    paymentTotal: String(DEMO_TERMS.paymentTotal),
-    paymentInterval: String(DEMO_TERMS.paymentInterval),
-    gracePeriod: String(DEMO_TERMS.gracePeriod),
+    principal: '100000',
+    interestRate: '10',
+    paymentTotal: '7',
+    paymentInterval: { amount: '1', unit: 'd' },
+    gracePeriod: { amount: '1', unit: 'd' },
   },
 }
 
-/** A whole-number field: `$` amounts, seconds, or a plain count. */
+/** A number field: a `$` amount, a `%` rate or a plain count. */
 export interface TermInput {
-  readonly key: TermField
+  readonly key: 'principal' | 'interestRate' | 'paymentTotal'
   readonly label: string
-  readonly unit: '$' | 's' | ''
+  readonly unit: '$' | '%' | ''
   readonly text: string
 }
 
+export interface DurationTerm {
+  readonly key: 'paymentInterval' | 'gracePeriod'
+  readonly label: string
+  readonly value: DurationInput
+}
+
 export interface BrokerModel {
-  /** Undefined once the LoanBroker exists. */
-  readonly create: (Command & { readonly text: string }) | undefined
   readonly lending: readonly LabelledAmount[]
   readonly draw: Command & { readonly text: string; readonly available: LabelledAmount }
   readonly merge: Command
   readonly settle: Command
-  readonly offer: Command & { readonly borrower: Borrower; readonly fields: readonly TermInput[] }
+  readonly offer: Command & {
+    readonly borrower: Borrower
+    readonly fields: readonly TermInput[]
+    readonly durations: readonly DurationTerm[]
+    /** The interest, the amount owed and the periodic payment the typed terms give. */
+    readonly derived: readonly LabelledAmount[]
+  }
   readonly pending:
     | {
         readonly title: string
@@ -67,23 +87,54 @@ export interface BrokerModel {
 
 const TERM_FIELDS: readonly Omit<TermInput, 'text'>[] = [
   { key: 'principal', label: 'Principal', unit: '$' },
-  { key: 'amountOwed', label: 'Amount owed', unit: '$' },
-  { key: 'periodicPayment', label: 'Periodic payment', unit: '$' },
+  { key: 'interestRate', label: 'Interest per annum', unit: '%' },
   { key: 'paymentTotal', label: 'Payments', unit: '' },
-  { key: 'paymentInterval', label: 'Payment interval', unit: 's' },
-  { key: 'gracePeriod', label: 'Grace period', unit: 's' },
 ]
 
-function termsOf(typed: BrokerUi['terms']): LoanTerms {
-  const whole = (field: TermField) => parseWhole(typed[field]).value
+const DURATION_TERMS: readonly Omit<DurationTerm, 'value'>[] = [
+  { key: 'paymentInterval', label: 'Payment interval' },
+  { key: 'gracePeriod', label: 'Grace period' },
+]
+
+const YEAR_SECONDS = 365n * 86_400n
+
+/**
+ * The principal plus simple interest over the loan, rounded up to a whole unit.
+ *
+ * @param principal - Whole units lent.
+ * @param rate - Hundredths of a percent a year.
+ * @param seconds - The loan's length: its payments times their interval.
+ */
+export function amountOwedOf(principal: bigint, rate: bigint, seconds: number): bigint {
+  const scale = 10_000n * YEAR_SECONDS
+  return principal + (principal * rate * BigInt(seconds) + scale - 1n) / scale
+}
+
+/** The smallest payment that `payments` of cover `owed`; all of it when there are none. */
+export function periodicPaymentOf(owed: bigint, payments: number): bigint {
+  if (payments < 1) return owed
+  const n = BigInt(payments)
+  return (owed + n - 1n) / n
+}
+
+function termsOf(typed: OfferInputs): LoanTerms {
+  const principal = parseWhole(typed.principal).value
+  const paymentTotal = Number(parseWhole(typed.paymentTotal).value)
+  const paymentInterval = secondsOf(typed.paymentInterval)
+  const rate = parsePercent(typed.interestRate).hundredths
+  const amountOwed = amountOwedOf(principal, rate, paymentTotal * paymentInterval)
   return {
-    principal: whole('principal'),
-    amountOwed: whole('amountOwed'),
-    periodicPayment: whole('periodicPayment'),
-    paymentTotal: Number(whole('paymentTotal')),
-    paymentInterval: Number(whole('paymentInterval')),
-    gracePeriod: Number(whole('gracePeriod')),
+    principal,
+    amountOwed,
+    periodicPayment: periodicPaymentOf(amountOwed, paymentTotal),
+    paymentTotal,
+    paymentInterval,
+    gracePeriod: secondsOf(typed.gracePeriod),
   }
+}
+
+function fieldText(key: TermInput['key'], typed: string): string {
+  return key === 'interestRate' ? parsePercent(typed).text : parseWhole(typed).text
 }
 
 function pending(s: Snapshot): BrokerModel['pending'] {
@@ -112,17 +163,10 @@ function pending(s: Snapshot): BrokerModel['pending'] {
 export function brokerTab(s: Snapshot, ui: BrokerUi): BrokerModel {
   const { broker } = s
   const redacted = { visibility: 'redacted' } as const
-  const debtMaximum = parseWhole(ui.debtMaximum)
   const draw = parseWhole(ui.draw)
+  const terms = termsOf(ui.terms)
+  const known = (value: bigint) => ({ visibility: 'decrypted', value }) as const
   return {
-    create:
-      broker === undefined
-        ? {
-            text: debtMaximum.text,
-            action: { type: 'LoanBrokerSet', debtMaximum: debtMaximum.value },
-            label: 'Create LoanBroker',
-          }
-        : undefined,
     lending: [
       { label: 'Debt maximum', shown: broker?.debtMaximum ?? redacted },
       { label: 'Debt to the vault', shown: broker?.debtTotal ?? redacted },
@@ -141,9 +185,15 @@ export function brokerTab(s: Snapshot, ui: BrokerUi): BrokerModel {
       borrower: ui.borrower,
       fields: TERM_FIELDS.map((field) => ({
         ...field,
-        text: parseWhole(ui.terms[field.key]).text,
+        text: fieldText(field.key, ui.terms[field.key]),
       })),
-      action: { type: 'LoanSetSign', borrower: ui.borrower, terms: termsOf(ui.terms) },
+      durations: DURATION_TERMS.map((term) => ({ ...term, value: ui.terms[term.key] })),
+      derived: [
+        { label: 'Interest', shown: known(terms.amountOwed - terms.principal) },
+        { label: 'Amount owed', shown: known(terms.amountOwed) },
+        { label: 'Periodic payment', shown: known(terms.periodicPayment) },
+      ],
+      action: { type: 'LoanSetSign', borrower: ui.borrower, terms },
       label: `Sign offer to ${NAMES[ui.borrower]}`,
     },
     pending: pending(s),

@@ -1,12 +1,10 @@
 import { Client } from 'xrpl'
 import type { LedgerStream } from 'xrpl'
 
-export type { Client }
-
 /** Team devnet running the confidential lending fork of rippled. */
 export const NETWORK_WSS = 'wss://xrpl-confidential-loans.zeno.md'
 export const FAUCET_HOST = 'faucet.xrpl-confidential-loans.zeno.md'
-const EXPLORER = 'https://custom.xrpl.org/xrpl-confidential-loans.zeno.md'
+const EXPLORER = 'https://custom.xrpl.org/xrpl-confidential-loans.zeno.md:443'
 
 export function txLink(hash: string): string {
   return `${EXPLORER}/transactions/${hash}`
@@ -14,22 +12,6 @@ export function txLink(hash: string): string {
 
 export function accountLink(address: string): string {
   return `${EXPLORER}/accounts/${address}`
-}
-
-/**
- * Connects to the team devnet, runs `fn`, and always disconnects.
- *
- * @param fn - Work to run with a connected client.
- * @returns Whatever `fn` returns.
- */
-export async function withClient<T>(fn: (client: Client) => Promise<T>): Promise<T> {
-  const client = new Client(NETWORK_WSS)
-  await client.connect()
-  try {
-    return await fn(client)
-  } finally {
-    await client.disconnect()
-  }
 }
 
 /** xrpl.js's default request timeout. */
@@ -164,25 +146,4 @@ export async function connectLedger(options: LedgerOptions = {}): Promise<Ledger
   }
   connection.listen()
   return connection
-}
-
-export interface ServerStatus {
-  buildVersion: string
-  networkId: number | undefined
-  validatedLedger: number | undefined
-}
-
-/**
- * Reads `server_info` from the team devnet.
- *
- * @param client - Connected client.
- * @returns The node's build version, network ID, and latest validated ledger index.
- */
-export async function readServerStatus(client: Client): Promise<ServerStatus> {
-  const { info } = (await client.request({ command: 'server_info' })).result
-  return {
-    buildVersion: info.build_version,
-    networkId: info.network_id,
-    validatedLedger: info.validated_ledger?.seq,
-  }
 }

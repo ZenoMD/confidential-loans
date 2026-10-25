@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { ActionFailed, DEMO_TERMS } from '@confidential-loans/core/demo-ledger'
+import { ActionFailed } from '@confidential-loans/core/demo-ledger'
+import { TERMS } from './snapshot.fixture.ts'
 import type { Action, Gate } from '@confidential-loans/core/demo-ledger'
 import { actionKey, ctaView, failureText, formatClock } from './cta.ts'
 
@@ -92,8 +93,8 @@ describe('ctaView', () => {
 
 describe('actionKey', () => {
   it('matches actions with the same fields, including bigints and terms', () => {
-    const a: Action = { type: 'LoanSetSign', borrower: 'borrowerA', terms: { ...DEMO_TERMS } }
-    const b: Action = { type: 'LoanSetSign', borrower: 'borrowerA', terms: DEMO_TERMS }
+    const a: Action = { type: 'LoanSetSign', borrower: 'borrowerA', terms: { ...TERMS } }
+    const b: Action = { type: 'LoanSetSign', borrower: 'borrowerA', terms: TERMS }
     assert.equal(actionKey(a), actionKey(b))
   })
 

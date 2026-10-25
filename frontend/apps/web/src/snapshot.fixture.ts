@@ -1,7 +1,17 @@
-import type { LoanView, Public, Snapshot } from '@confidential-loans/core/demo-ledger'
+import type { LoanTerms, LoanView, Public, Snapshot } from '@confidential-loans/core/demo-ledger'
 
 /** Ledger time in the fixture: 2026-10-25 12:00:00 local. */
 export const NOW = new Date(2026, 9, 25, 12, 0, 0).getTime()
+
+/** One payment of 105,000 a minute after the start. */
+export const TERMS: LoanTerms = {
+  principal: 100_000n,
+  amountOwed: 105_000n,
+  periodicPayment: 105_000n,
+  paymentTotal: 1,
+  paymentInterval: 60,
+  gracePeriod: 60,
+}
 
 export function pub(value: bigint): Public {
   return { visibility: 'public', value }
@@ -31,6 +41,13 @@ export function snapshot(fields: Partial<Snapshot> = {}): Snapshot {
   const redacted = { visibility: 'redacted' } as const
   return {
     viewer: 'outsider',
+    addresses: {
+      brokerA: 'rBroker',
+      depositorA: 'rDepositorA',
+      depositorB: 'rDepositorB',
+      borrowerA: 'rBorrowerA',
+      borrowerB: 'rBorrowerB',
+    },
     ledgerIndex: 1234,
     now: NOW,
     phase: 'investment',

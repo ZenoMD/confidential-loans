@@ -1,7 +1,7 @@
-import type { Client, LedgerEntry, Wallet } from 'xrpl'
+import { prepareConfidentialLoanBrokerSet } from 'xrpl'
+import type { Client, ConfidentialKeypair, LedgerEntry, Wallet } from 'xrpl'
 
 import { rippledErrorCode } from './accounts.ts'
-
 import { submit } from './submit.ts'
 import type { Submitted } from './submit.ts'
 
@@ -74,4 +74,84 @@ export async function readVault(
     if (rippledErrorCode(error) === 'entryNotFound') return undefined
     throw error
   }
+}
+
+/** A ledger entry with its ID, as `account_objects` returns it. */
+export type WithIndex<T> = T & { readonly index: string }
+
+/**
+ * Lists the entries of one type that an account owns, following every page.
+ *
+ * @param client - Connected client.
+ * @param account - Owner.
+ * @param type - Entry type, as `account_objects` names it.
+ * @param ledgerIndex - Ledger to read; the latest validated one by default.
+ */
+export async function ownedObjects<T>(
+  client: Client,
+  account: string,
+  type: 'loan' | 'loan_broker',
+  ledgerIndex: number | 'validated' = 'validated',
+): Promise<Array<WithIndex<T>>> {
+  const found: Array<WithIndex<T>> = []
+  let marker: unknown
+  do {
+    const { result } = await client.request({
+      command: 'account_objects',
+      account,
+      type,
+      ledger_index: ledgerIndex,
+      ...(marker === undefined ? {} : { marker }),
+    })
+    found.push(...(result.account_objects as unknown as Array<WithIndex<T>>))
+    marker = result.marker
+  } while (marker !== undefined)
+  return found
+}
+
+/**
+ * Finds the LoanBroker an account owns for a vault.
+ *
+ * @returns The LoanBroker, or undefined when the owner has none for the vault.
+ */
+export async function findLoanBroker(
+  client: Client,
+  owner: string,
+  vaultID: string,
+  ledgerIndex: number | 'validated' = 'validated',
+): Promise<WithIndex<LedgerEntry.LoanBroker> | undefined> {
+  const brokers = await ownedObjects<LedgerEntry.LoanBroker>(
+    client,
+    owner,
+    'loan_broker',
+    ledgerIndex,
+  )
+  return brokers.find((broker) => broker.VaultID === vaultID)
+}
+
+/**
+ * Creates a confidential LoanBroker for a vault: its Lending Balance is encrypted under the Broker
+ * Key, with the proof that the owner holds that key.
+ *
+ * @param client - Connected client.
+ * @param owner - The vault owner.
+ * @param vaultID - Vault to lend from.
+ * @param brokerKeypair - The Broker Key.
+ * @param debtMaximum - The most the Lending Balance may owe the vault; 0 means no cap.
+ * @returns The transaction hash.
+ */
+export async function createConfidentialLoanBroker(
+  client: Client,
+  owner: Wallet,
+  vaultID: string,
+  brokerKeypair: ConfidentialKeypair,
+  debtMaximum: bigint,
+): Promise<string> {
+  const tx = await prepareConfidentialLoanBrokerSet(client, {
+    account: owner.address,
+    vaultID,
+    brokerKeypair,
+    debtMaximum: debtMaximum.toString(),
+  })
+  return (await submit(client, tx, owner)).hash
 }

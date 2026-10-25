@@ -3,12 +3,12 @@ import type { Client, LedgerEntry } from 'xrpl'
 import { rippledErrorCode } from './accounts.ts'
 import type { Borrower, Depositor, Signer } from './demo-ledger.ts'
 import type { Kit } from './kit.ts'
+import { findLoanBroker, ownedObjects } from './lending.ts'
+import type { WithIndex } from './lending.ts'
 
 const BORROWERS = ['borrowerA', 'borrowerB'] as const satisfies readonly Borrower[]
 const DEPOSITORS = ['depositorA', 'depositorB'] as const satisfies readonly Depositor[]
 const SIGNERS = ['brokerA', ...DEPOSITORS, ...BORROWERS] as const satisfies readonly Signer[]
-
-type WithIndex<T> = T & { readonly index: string }
 
 /** The raw ledger entries the demo renders, all read at one validated ledger. */
 export interface LedgerState {
@@ -57,40 +57,17 @@ async function maybeEntry<T>(
   }
 }
 
-async function ownedObjects<T>(
-  client: Client,
-  account: string,
-  type: 'loan' | 'loan_broker',
-  ledgerIndex: number,
-): Promise<Array<WithIndex<T>>> {
-  const found: Array<WithIndex<T>> = []
-  let marker: unknown
-  do {
-    const { result } = await client.request({
-      command: 'account_objects',
-      account,
-      type,
-      ledger_index: ledgerIndex,
-      ...(marker === undefined ? {} : { marker }),
-    })
-    found.push(...(result.account_objects as unknown as Array<WithIndex<T>>))
-    marker = result.marker
-  } while (marker !== undefined)
-  return found
-}
-
 async function readBroker(
   client: Client,
   kit: Kit,
   ledgerIndex: number,
 ): Promise<LedgerState['broker']> {
-  const brokers = await ownedObjects<LedgerEntry.LoanBroker>(
+  const broker = await findLoanBroker(
     client,
     kit.accounts.brokerA.address,
-    'loan_broker',
+    kit.vaultID,
     ledgerIndex,
   )
-  const broker = brokers.find((b) => b.VaultID === kit.vaultID)
   if (broker === undefined) return undefined
   const lendingBalance = await maybeEntry<LedgerEntry.MPToken>(
     client,

@@ -1,8 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { DEMO_TERMS } from '@confidential-loans/core/demo-ledger'
 import { borrowerTab } from './borrower.model.ts'
-import { loan, NOW, snapshot } from '#web/snapshot.fixture.ts'
+import { loan, NOW, snapshot, TERMS } from '#web/snapshot.fixture.ts'
 
 describe('borrowerTab', () => {
   it('lists only the selected borrower loans, with both payments', () => {
@@ -21,7 +20,7 @@ describe('borrowerTab', () => {
   })
 
   it('shows the held offer to its borrower only', () => {
-    const offer = { borrower: 'borrowerA', terms: DEMO_TERMS, signedAt: NOW, stale: false } as const
+    const offer = { borrower: 'borrowerA', terms: TERMS, signedAt: NOW, stale: false } as const
     const s = snapshot({ offer })
     assert.deepEqual(borrowerTab(s, 'borrowerA').offer?.cosign.action, {
       type: 'LoanSetCosign',

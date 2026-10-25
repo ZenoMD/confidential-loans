@@ -199,6 +199,13 @@ export function buildSnapshot(
   const { vault, broker } = state
   return {
     viewer,
+    addresses: {
+      brokerA: kit.accounts.brokerA.address,
+      depositorA: kit.accounts.depositorA.address,
+      depositorB: kit.accounts.depositorB.address,
+      borrowerA: kit.accounts.borrowerA.address,
+      borrowerB: kit.accounts.borrowerB.address,
+    },
     ledgerIndex: state.ledgerIndex,
     now: rippleTime(state.closeTime),
     phase: phaseAt(state.closeTime, vault),

@@ -38,12 +38,6 @@
   overflow-wrap: anywhere;
 }
 
-.page-notice a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 .page-header {
   display: flex;
   flex-direction: column;
@@ -66,10 +60,10 @@
 }
 
 .page-phase {
-  margin: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  align-items: center;
+  gap: 8px 16px;
   font: var(--type-body-sm);
   color: var(--mute);
 }

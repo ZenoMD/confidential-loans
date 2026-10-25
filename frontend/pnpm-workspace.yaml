@@ -1,7 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  - scripts
 minimumReleaseAge: 1440
 # The xrpl.js fork, packed from its built checkout. xrpl depends on these two patched packages.
 overrides:

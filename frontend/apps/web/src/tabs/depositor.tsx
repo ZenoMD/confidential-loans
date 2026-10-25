@@ -23,7 +23,12 @@ export function DepositorTab({ depositor, onDepositor }: DepositorTabProps) {
   const m = snapshot === null ? null : depositorTab(snapshot, depositor, amount)
   const aside = (
     <>
-      <Role role="depositor" who={NAMES[depositor]} action="Deposits into the vault" />
+      <Role
+        role="depositor"
+        who={NAMES[depositor]}
+        action="Deposits into the vault"
+        address={snapshot?.addresses[depositor]}
+      />
       <Toggle
         label="Depositor"
         options={[

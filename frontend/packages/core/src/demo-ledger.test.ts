@@ -6,7 +6,7 @@ import { decode, deriveConfidentialKeypair, hashes, loadMptCrypto, Wallet } from
 import type { Client, ConfidentialKeypair, MptCryptoModule } from 'xrpl'
 
 import { confidentialKeypair, newSeed, walletFromSeed } from './accounts.ts'
-import { ActionFailed, DEMO_TERMS, gate, openDemo } from './demo-ledger.ts'
+import { ActionFailed, gate, openDemo } from './demo-ledger.ts'
 import type { Demo, LoanTerms, Shown, Snapshot, Viewer } from './demo-ledger.ts'
 import type { Kit } from './kit.ts'
 import type { Ledger, LedgerClosedListener } from './network.ts'
@@ -25,12 +25,14 @@ const SUBSCRIPTION = 846_219_727
 const REDEMPTION = SUBSCRIPTION + 600
 const LOAN_START = SUBSCRIPTION + 30
 
-/** Small amounts keep each decrypt in the test under a few milliseconds. */
+/** One payment a minute after the start. Small amounts keep each decrypt fast. */
 const TERMS: LoanTerms = {
-  ...DEMO_TERMS,
   principal: 1000n,
   amountOwed: 1050n,
   periodicPayment: 1050n,
+  paymentTotal: 1,
+  paymentInterval: 60,
+  gracePeriod: 60,
 }
 
 let crypto: MptCryptoModule
@@ -333,6 +335,7 @@ it('reads the vault and the phase from the validated ledger', async () => {
   assert.equal(first.vault.subscriptionDate, toMs(SUBSCRIPTION))
   assert.equal(first.vault.redemptionDate, toMs(REDEMPTION))
   assert.equal(first.depositors.depositorA.shares, 1500n)
+  assert.equal(first.addresses.borrowerB, address('borrowerB'))
   assert.equal(demo.snapshot('outsider'), first, 'same object until something changes')
 
   const changed = new Promise<void>((resolve) => demo.subscribe(resolve))
@@ -434,38 +437,23 @@ it('reports a failed read and recovers on the next ledger', async () => {
   demo.close()
 })
 
-it('act creates a confidential LoanBroker under the Broker Key', async (t) => {
-  const devnet = await investing()
-  devnet.owned.delete(`${address('brokerA')}:loan_broker`)
-  const demo = await openDemo(kit, devnet.ledger)
-  assert.equal(demo.snapshot('brokerA').broker, undefined)
-  t.mock.timers.enable({ apis: ['setTimeout'] })
-  const acting = demo.act({ type: 'LoanBrokerSet', debtMaximum: 2500n })
-  assert.equal(demo.snapshot('brokerA').submitting?.type, 'LoanBrokerSet')
-  await settle(t, acting)
-  const [tx] = devnet.submitted
-  assert.equal(tx?.['TransactionType'], 'LoanBrokerSet')
-  assert.equal(tx?.['Account'], address('brokerA'))
-  assert.equal(tx?.['VaultID'], VAULT)
-  assert.equal(tx?.['DebtMaximum'], '2500')
-  assert.equal(tx?.['Flags'], 0x0002_0000)
-  assert.equal(tx?.['HolderEncryptionKey'], key('brokerA').publicKey)
-  assert.equal(demo.snapshot('brokerA').submitting, undefined)
-  demo.close()
-})
-
 it('has the broker sign a LoanSet and the borrower co-sign that blob', async (t) => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
   t.mock.timers.enable({ apis: ['setTimeout'] })
-  await settle(t, demo.act({ type: 'LoanSetSign', borrower: 'borrowerB', terms: TERMS }))
-  assert.equal(devnet.submitted.length, 0, 'signing submits nothing')
+  const signed = await settle(
+    t,
+    demo.act({ type: 'LoanSetSign', borrower: 'borrowerB', terms: TERMS }),
+  )
+  assert.equal(signed, undefined, 'signing submits nothing')
+  assert.equal(devnet.submitted.length, 0)
   const offer = demo.snapshot('brokerA').offer
   assert.equal(offer?.borrower, 'borrowerB')
   assert.deepEqual(offer?.terms, TERMS)
   assert.equal(offer?.stale, false)
 
-  await settle(t, demo.act({ type: 'LoanSetCosign', borrower: 'borrowerB' }))
+  const hash = await settle(t, demo.act({ type: 'LoanSetCosign', borrower: 'borrowerB' }))
+  assert.match(hash ?? '', /^[0-9A-F]{64}$/)
   const [tx] = devnet.submitted
   assert.equal(tx?.['TransactionType'], 'LoanSet')
   assert.equal(tx?.['Account'], address('brokerA'))
