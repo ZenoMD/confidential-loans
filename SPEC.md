@@ -26,9 +26,11 @@ The broker withdraws funds from the vault with a `LoanBrokerDraw` transaction. T
 
 To issue a loan a broker and borrower agree to loan terms off-chain and co-sign a `LoanSet` transaction as in XLS-66. The difference being that the loan terms (principal, amount owed, periodic payment, and interest rate) values are sent as ELGamal encrypted fields encrypted to the broker, borrower and loan auditor. A ZK proof ensures consistency between these encrypted values and applies the relevant range check. The homomorphic properties of ELGamal allow the ledger to debit the broker lending balance and credit the borrowers confidential inbox without revealing the principal publicly. Once the borrower has received their loan they can convert it to a spendable confidential balance and proceed to spend it confidentially as per XLS-96.
 
-The borrower makes periodic confidential repayments via `ConfidentialLoanPay` transactions. This contains the repayment amount encrypted to the broker, borrower, and auditor. Because the ledger cannot read the encrypted payment amount directly it relies on some additional ZK proofs to ensure it t is exactly the periodic payment, or repays the remaining balance in full.
+The borrower makes periodic confidential repayments via `ConfidentialLoanPay` transactions. This contains the repayment amount encrypted to the broker, borrower, MPT Auditor and Loan Auditor. Because the ledger cannot read the encrypted payment amount directly it relies on some additional ZK proofs to ensure it is at least the periodic payment, or repays the remaining balance in full.
 
-Once a loan has completed either by being fully repaid or defaulting, the broker can settle the funds back to the vault with a `LoanBrokerSettle` transaction. 
+A loan can be defaulted by the broker if a payment has not been made once `NextPaymentDueDate` + `GracePeriod` has passed (as in XLS-66).  
+
+At any time the broker can settle funds back to the vault with a `LoanBrokerSettle` transaction.
 
 ## Amendments
 
@@ -43,7 +45,7 @@ This amendment (`ConfidentialLendingProtocol`) builds upon `LendingProtocolV1_1`
 
 ## 4. Ledger Entry: `LoanBroker`
 
-The `LoanBroker` ledger entry is extended one flag. All other fields are as in XLS-66.
+The `LoanBroker` ledger entry is extended with one flag. All other fields are as in XLS-66.
 
 ### 4.1. Flags
 
@@ -72,7 +74,7 @@ Each hidden term is stored as three 66-byte XLS-96 ElGamal ciphertexts of the sa
 | :--------------- | :-------------------------------------------------------------------------------------------- | :-------------------------------------------------------- |
 | Principal        | `BorrowerEncryptedPrincipal`, `BrokerEncryptedPrincipal`, `LoanAuditorEncryptedPrincipal`       | The amount lent.                                          |
 | Amount Owed      | `BorrowerEncryptedAmountOwed`, `BrokerEncryptedAmountOwed`, `LoanAuditorEncryptedAmountOwed`    | The amount still to repay. Reduced by each payment.       |
-| Periodic Payment | `BorrowerEncryptedPeriodicPayment`, `BrokerEncryptedPeriodicPayment`, `LoanAuditorEncryptedPeriodicPayment` | The regular payment amount.                  |
+| Periodic Payment | `BorrowerEncryptedPeriodicPayment`, `BrokerEncryptedPeriodicPayment`, `LoanAuditorEncryptedPeriodicPayment` | The minimum regular payment.                 |
 | Interest Rate    | `BorrowerEncryptedInterestRate`, `BrokerEncryptedInterestRate`, `LoanAuditorEncryptedInterestRate` | The annual interest rate, in 1/10 basis points.     |
 
 | Field Name                 | Required    | JSON Type | Internal Type | Default Value | Description                                                         |
@@ -122,7 +124,7 @@ The `ZKProof` is bound to the `LoanBrokerSet` context hash defined in [Appendix 
 
 ### 6.3. Transaction Fee
 
-A confidential `LoanBrokerSet` costs 10 times the standard base fee (same as XLS-96 transactions), to accommodate the cost of verifying of its zero-knowledge proof.
+A confidential `LoanBrokerSet` costs 10 times the standard base fee, as for XLS-96 `ConfidentialMPTConvert`.
 
 ### 6.4. Failure Conditions
 
@@ -147,7 +149,7 @@ After the existing state changes listed in XLS-66:
 
 ## 7. Transaction (new): `LoanBrokerDraw`
 
-Called by a LoanBroker to draw MPTs from a vault they own into the `LendingBalance`
+Called by a LoanBroker to draw MPTs from a vault they own into the Lending Balance.
 
 ### 7.1. Fields
 
@@ -159,7 +161,7 @@ Called by a LoanBroker to draw MPTs from a vault they own into the `LendingBalan
 | `Amount`                 | Yes      | `object`  | `AMOUNT`      | N/A           | The amount to draw, in the Vault's asset.                                                      |
 | `HolderEncryptedAmount`  | Yes      | `string`  | `BLOB`        | N/A           | `Amount` encrypted under the Broker Key. Credited to the Lending Balance inbox.               |
 | `IssuerEncryptedAmount`  | Yes      | `string`  | `BLOB`        | N/A           | `Amount` encrypted under the Issuer's key.                                                     |
-| `AuditorEncryptedAmount` | Yes      | `string`  | `BLOB`        | N/A           | `Amount` encrypted under the Auditor's key.                                                    |
+| `AuditorEncryptedAmount` | Yes      | `string`  | `BLOB`        | N/A           | `Amount` encrypted under the MPT Auditor's key.                                                |
 | `BlindingFactor`         | Yes      | `string`  | `UINT256`     | N/A           | The randomness used to encrypt `Amount`, so validators can check the ciphertexts.              |
 
 ### 7.2. Failure Conditions
@@ -252,7 +254,7 @@ Called by a LoanBroker to merge their confidential lending balance inbox into th
 1. `LoanBrokerID` is zero. (`temINVALID`)
 2. The `LoanBroker` does not exist. (`tecNO_ENTRY`)
 3. The submitter is not `LoanBroker.Owner`, or the `LoanBroker` is not confidential. (`tecNO_PERMISSION`)
-4. The `LoanBroker` pseudo-account's `MPToken` is locked, or the issuance is locked. (`tecLOCKED`)
+4. The `LoanBroker` pseudo-account is locked for the asset. (`tecLOCKED`)
 5. The `LoanBroker` pseudo-account is not authorized for the asset. (`tecNO_AUTH`)
 
 ### 9.3. State Changes
@@ -364,7 +366,7 @@ In addition to XLS-66:
 
 ## 13. Transaction (new): `ConfidentialLoanPay`
 
-The Borrower pays a confidential `Loan` from their confidential spending balance into the Lending Balance's inbox, as an XLS-96 `ConfidentialMPTSend` from the Borrower to the `LoanBroker` pseudo-account. A regular payment is exactly the Periodic Payment; a full payment (`tfLoanFullPayment`) is exactly the Amount Owed and closes the `Loan`. Payments are accepted until the `Loan` is closed or defaulted, with no late fees.
+The Borrower pays a confidential `Loan` from their confidential spending balance into the Lending Balance's inbox, as an XLS-96 `ConfidentialMPTSend` from the Borrower to the `LoanBroker` pseudo-account. A regular payment is at least the Periodic Payment and at most the Amount Owed; a full payment (`tfLoanFullPayment`) is exactly the Amount Owed and closes the `Loan`. Payments are accepted until the `Loan` is closed or defaulted, with no late fees.
 
 ### 13.1. Fields
 
@@ -377,10 +379,12 @@ The Borrower pays a confidential `Loan` from their confidential spending balance
 | `DestinationEncryptedAmount` | Yes         | `string`  | `BLOB`        | N/A           | The payment under the Broker Key. Credited to the Lending Balance's inbox.   |
 | `IssuerEncryptedAmount`      | Yes         | `string`  | `BLOB`        | N/A           | The payment under the Issuer's key.                                          |
 | `AuditorEncryptedAmount`     | Yes         | `string`  | `BLOB`        | N/A           | The payment under the MPT Auditor's key.                                     |
+| `LoanAuditorEncryptedAmount` | Yes         | `string`  | `BLOB`        | N/A           | The payment under the Loan Auditor's key.                                    |
 | `BalanceCommitment`          | Yes         | `string`  | `BLOB`        | N/A           | A commitment to the Borrower's spending balance.                             |
 | `AmountCommitment`           | Yes         | `string`  | `BLOB`        | N/A           | A commitment to the payment.                                                 |
 | `AmountOwedCommitment`       | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Amount Owed. Required for a regular payment, not allowed for a full payment. |
-| `ZKProof`                    | Yes         | `string`  | `BLOB`        | N/A           | The 1826-byte (regular) or 1010-byte (full) payment proof (§13.3).           |
+| `PeriodicPaymentCommitment`  | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Periodic Payment. Required for a regular payment, not allowed for a full payment. |
+| `ZKProof`                    | Yes         | `string`  | `BLOB`        | N/A           | The 2148-byte (regular) or 1202-byte (full) payment proof (§13.3).           |
 
 ### 13.2. Flags
 
@@ -395,10 +399,11 @@ Let X be the payment. `ZKProof` concatenates these proofs, all bound to the cont
 | Part | Bytes | Payment | Proof                                                                                                   | Proves               |
 | :--- | ----: | :------ | :------------------------------------------------------------------------------------------------------ | :------------------- |
 | 1    | 946   | Both    | XLS-96 `ConfidentialMPTSend` proof to the Broker Key, Issuer and MPT Auditor                             | The payment transfer, as in XLS-96. |
-| 2    | 64    | Regular | XLS-96 Clawback sigma proof, amount 0, Borrower's key, over `SenderEncryptedAmount` − `BorrowerEncryptedPeriodicPayment` | X = Periodic Payment. |
-| 2    | 64    | Full    | As above, over `SenderEncryptedAmount` − `BorrowerEncryptedAmountOwed`                                    | X = Amount Owed.     |
+| 2    | 192   | Both    | XLS-96 Send sigma proof to the Loan Auditor                                                               | `LoanAuditorEncryptedAmount` encrypts X. |
+| 3    | 64    | Full    | XLS-96 Clawback sigma proof, amount 0, Borrower's key, over `SenderEncryptedAmount` − `BorrowerEncryptedAmountOwed` | X = Amount Owed. |
 | 3    | 128   | Regular | XLS-96 ConvertBack sigma proof, Borrower's key, over `BorrowerEncryptedAmountOwed` and `AmountOwedCommitment` | `AmountOwedCommitment` commits to the Amount Owed. |
-| 4    | 688   | Regular | Bulletproof over `AmountOwedCommitment` − `AmountCommitment`                                              | Amount Owed ≥ X.     |
+| 4    | 128   | Regular | As part 3, over `BorrowerEncryptedPeriodicPayment` and `PeriodicPaymentCommitment`                        | `PeriodicPaymentCommitment` commits to the Periodic Payment. |
+| 5    | 754   | Regular | Aggregated Bulletproof over `AmountCommitment` − `PeriodicPaymentCommitment` and `AmountOwedCommitment` − `AmountCommitment` | Periodic Payment ≤ X ≤ Amount Owed. |
 
 ### 13.4. Transaction Fee
 
@@ -408,24 +413,31 @@ Let X be the payment. `ZKProof` concatenates these proofs, all bound to the cont
 
 1. `LoanID` is zero. (`temINVALID`)
 2. A ciphertext is malformed. (`temBAD_CIPHERTEXT`)
-3. A commitment is not a valid 33-byte compressed point, `AmountOwedCommitment` is present for a full payment or missing for a regular one, or `ZKProof` has the wrong length. (`temMALFORMED`)
-4. The `Loan` does not exist. (`tecNO_ENTRY`)
-5. The submitter is not the Borrower, or the `Loan` is not confidential. (`tecNO_PERMISSION`)
-6. `PaymentRemaining` is 0, or it is 1 and the payment is regular. (`tecKILLED`)
-7. The Borrower or the `LoanBroker` pseudo-account is locked for the asset. (`tecLOCKED`)
-8. The Borrower or the `LoanBroker` pseudo-account is not authorized for the asset. (`tecNO_AUTH`)
-9. Part 1 of `ZKProof` does not verify against the Borrower's `ConfidentialBalanceSpending` and `ConfidentialBalanceVersion`. (`tecBAD_PROOF`)
-10. Another part of `ZKProof` does not verify. (`tecBAD_PROOF`)
+3. A commitment is not a valid 33-byte compressed point, `AmountOwedCommitment` or `PeriodicPaymentCommitment` is present for a full payment or missing for a regular one, or `ZKProof` has the wrong length. (`temMALFORMED`)
+4. The payment ciphertexts do not share their first 33 bytes. (`temMALFORMED`)
+5. The `Loan` does not exist. (`tecNO_ENTRY`)
+6. The submitter is not the Borrower, or the `Loan` is not confidential. (`tecNO_PERMISSION`)
+7. `PaymentRemaining` is 0, or it is 1 and the payment is regular. (`tecKILLED`)
+8. The Borrower or the `LoanBroker` pseudo-account is locked for the asset. (`tecLOCKED`)
+9. The Borrower or the `LoanBroker` pseudo-account is not authorized for the asset. (`tecNO_AUTH`)
+10. Part 1 of `ZKProof` does not verify against the Borrower's `ConfidentialBalanceSpending` and `ConfidentialBalanceVersion`. (`tecBAD_PROOF`)
+11. Another part of `ZKProof` does not verify. (`tecBAD_PROOF`)
 
 ### 13.6. State Changes
 
 1. Move the payment as in XLS-96 `ConfidentialMPTSend`, from the Borrower to the `LoanBroker` pseudo-account.
-2. Regular payment: subtract each Periodic Payment ciphertext from the Amount Owed ciphertext under the same key, increment `ConfidentialLoanVersion`, decrement `PaymentRemaining`, set `PreviousPaymentDueDate` to `NextPaymentDueDate`, and increase `NextPaymentDueDate` by `PaymentInterval`.
+2. Regular payment: subtract `SenderEncryptedAmount`, `DestinationEncryptedAmount` (as submitted) and `LoanAuditorEncryptedAmount` from the Borrower, Broker and Loan Auditor Amount Owed ciphertexts, increment `ConfidentialLoanVersion`, decrement `PaymentRemaining`, set `PreviousPaymentDueDate` to `NextPaymentDueDate`, and increase `NextPaymentDueDate` by `PaymentInterval`.
 3. Full payment: set `PaymentRemaining` and `NextPaymentDueDate` to 0.
 
 ### 13.7. Invariants
 
 As for XLS-96 `ConfidentialMPTSend`: `ConfidentialOutstandingAmount`, `OutstandingAmount` and every `MPTAmount` are unchanged. The Vault and `DebtTotal` are also unchanged.
+
+## 14. Transaction: `LoanDelete`
+
+### 14.1. State Changes
+
+With a confidential `LoanBroker`, XLS-66 state change 5 (clearing `DebtTotal` when the last `Loan` is deleted) does not apply.
 
 ## Appendix A: Context Hashes
 
