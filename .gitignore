@@ -3,4 +3,4 @@ dist/
 .env
 .env.*
 CLAUDE.local.md
-frontend/scripts/state.json
+demo/scripts/state.json
