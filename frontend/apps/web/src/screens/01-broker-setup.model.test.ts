@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { gate } from '@confidential-loans/core/demo-ledger'
 import type { BrokerView, Snapshot } from '@confidential-loans/core/demo-ledger'
-import { step01, step01Initial } from './01-broker-setup.model.ts'
+import { step01, step01Initial, step01Role } from './01-broker-setup.model.ts'
 
 const BROKER: BrokerView = {
   loanBrokerID: 'B'.repeat(64),
@@ -49,13 +49,16 @@ function snapshot(broker?: BrokerView): Snapshot {
 }
 
 describe('step01', () => {
-  it('shows the canvas labels and the fixed terms', () => {
-    const m = step01(snapshot(), step01Initial)
-    assert.deepEqual(m.role, {
+  it('names the role without a snapshot, so the aside renders while the ledger loads', () => {
+    assert.deepEqual(step01Role, {
       role: 'broker',
       who: 'Broker A',
       action: 'Creates the confidential LoanBroker',
     })
+  })
+
+  it('shows the canvas labels and the fixed terms', () => {
+    const m = step01(snapshot(), step01Initial)
     assert.equal(m.heading, 'Terms')
     assert.equal(m.debtMaximum.label, 'Debt maximum')
     assert.deepEqual(m.terms, [

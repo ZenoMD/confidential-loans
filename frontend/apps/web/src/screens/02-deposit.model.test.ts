@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { gate } from '@confidential-loans/core/demo-ledger'
 import type { DepositorView, Phase, Snapshot } from '@confidential-loans/core/demo-ledger'
-import { step02, step02Initial } from './02-deposit.model.ts'
+import { step02, step02Aside, step02Initial } from './02-deposit.model.ts'
 
 function depositor(wallet: bigint): DepositorView {
   return {
@@ -47,7 +47,7 @@ function snapshot(phase: Phase = 'subscription'): Snapshot {
 describe('step02', () => {
   it('starts on Depositor A with the agreed deposit', () => {
     const m = step02(snapshot(), step02Initial)
-    assert.deepEqual(m.role, {
+    assert.deepEqual(step02Aside(step02Initial).role, {
       role: 'depositor',
       who: 'Depositor A',
       action: 'Subscribes with a public deposit',
@@ -60,8 +60,8 @@ describe('step02', () => {
   })
 
   it('offers both depositors in the toggle and presses the selected one', () => {
-    const m = step02(snapshot(), { ...step02Initial, depositor: 'depositorB' })
-    assert.deepEqual(m.toggle, {
+    const aside = step02Aside({ ...step02Initial, depositor: 'depositorB' })
+    assert.deepEqual(aside.toggle, {
       label: 'Depositor',
       options: [
         { value: 'depositorA', label: 'Depositor A' },
@@ -72,8 +72,9 @@ describe('step02', () => {
   })
 
   it('names the selected depositor in the role and the CTA', () => {
-    const m = step02(snapshot(), { ...step02Initial, depositor: 'depositorB' })
-    assert.equal(m.role.who, 'Depositor B')
+    const ui = { ...step02Initial, depositor: 'depositorB' } as const
+    const m = step02(snapshot(), ui)
+    assert.equal(step02Aside(ui).role.who, 'Depositor B')
     assert.equal(m.cta.label, 'Deposit as Depositor B')
     assert.equal(m.cta.action.type === 'VaultDeposit' && m.cta.action.depositor, 'depositorB')
   })

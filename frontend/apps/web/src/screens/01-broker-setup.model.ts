@@ -6,6 +6,13 @@ import type { RoleKind } from '#web/stepNav.ts'
 /** Screen 1 shows no encrypted amount; it reads the ledger as the Broker. */
 export const step01Viewer: Viewer = 'brokerA'
 
+/** Who acts on screen 1. It needs no snapshot, so the aside renders while the ledger loads. */
+export const step01Role: {
+  readonly role: RoleKind
+  readonly who: string
+  readonly action: string
+} = { role: 'broker', who: 'Broker A', action: 'Creates the confidential LoanBroker' }
+
 /** What the Broker has typed. */
 export interface Step01Ui {
   readonly debtMaximum: string
@@ -15,7 +22,6 @@ export interface Step01Ui {
 export const step01Initial: Step01Ui = { debtMaximum: String(DEMO_AMOUNTS.debtMaximum) }
 
 export interface Step01Model {
-  readonly role: { readonly role: RoleKind; readonly who: string; readonly action: string }
   readonly heading: string
   /** Whole units, digits only. Read-only once the broker exists, showing the ledger value. */
   readonly debtMaximum: {
@@ -34,13 +40,12 @@ export interface Step01Model {
  *
  * @param s - The Broker's snapshot.
  * @param ui - The typed debt maximum, as entered.
- * @returns Everything the board renders.
+ * @returns Everything the board's main column renders.
  */
 export function step01(s: Snapshot, ui: Step01Ui): Step01Model {
   const text =
     s.broker === undefined ? ui.debtMaximum.replace(/\D/g, '') : String(s.broker.debtMaximum.value)
   return {
-    role: { role: 'broker', who: 'Broker A', action: 'Creates the confidential LoanBroker' },
     heading: 'Terms',
     debtMaximum: { label: 'Debt maximum', text, readOnly: s.broker !== undefined },
     terms: [

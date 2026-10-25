@@ -16,13 +16,17 @@ export const step02Initial: Step02Ui = {
   amount: String(DEMO_AMOUNTS.deposit),
 }
 
-export interface Step02Model {
+/** The aside: who acts, and the toggle that picks the depositor. */
+export interface Step02Aside {
   readonly role: { readonly role: RoleKind; readonly who: string; readonly action: string }
   readonly toggle: {
     readonly label: string
     readonly options: readonly [ToggleOption<Depositor>, ToggleOption<Depositor>]
     readonly selected: Depositor
   }
+}
+
+export interface Step02Model {
   readonly wallet: { readonly label: string; readonly shown: Shown }
   readonly heading: string
   /** Whole units, digits only. */
@@ -39,19 +43,18 @@ const NAMES: Readonly<Record<Depositor, string>> = {
 }
 
 /**
- * Screen 2, the depositors subscribing, as board `02` shows it with K7 applied: the wallet follows
- * the toggle. An empty amount submits 0, which `gate` rejects with `temBAD_AMOUNT`.
+ * Screen 2's aside. It needs no snapshot, so it renders while the ledger loads.
  *
- * @param s - The selected depositor's snapshot.
- * @param ui - The selected depositor and the amount, as entered.
- * @returns Everything the board renders.
+ * @param ui - The selected depositor.
+ * @returns The role and the depositor toggle, both following the selection.
  */
-export function step02(s: Snapshot, ui: Step02Ui): Step02Model {
-  const name = NAMES[ui.depositor]
-  const { wallet } = s.depositors[ui.depositor]
-  const text = ui.amount.replace(/\D/g, '')
+export function step02Aside(ui: Pick<Step02Ui, 'depositor'>): Step02Aside {
   return {
-    role: { role: 'depositor', who: name, action: 'Subscribes with a public deposit' },
+    role: {
+      role: 'depositor',
+      who: NAMES[ui.depositor],
+      action: 'Subscribes with a public deposit',
+    },
     toggle: {
       label: 'Depositor',
       options: [
@@ -60,6 +63,22 @@ export function step02(s: Snapshot, ui: Step02Ui): Step02Model {
       ],
       selected: ui.depositor,
     },
+  }
+}
+
+/**
+ * Screen 2, the depositors subscribing, as board `02` shows it with K7 applied: the wallet follows
+ * the toggle. An empty amount submits 0, which `gate` rejects with `temBAD_AMOUNT`.
+ *
+ * @param s - The selected depositor's snapshot.
+ * @param ui - The selected depositor and the amount, as entered.
+ * @returns Everything the board's main column renders.
+ */
+export function step02(s: Snapshot, ui: Step02Ui): Step02Model {
+  const name = NAMES[ui.depositor]
+  const { wallet } = s.depositors[ui.depositor]
+  const text = ui.amount.replace(/\D/g, '')
+  return {
     wallet: { label: 'Wallet', shown: wallet },
     heading: 'Deposit',
     amount: { label: 'Deposit amount', text },
