@@ -51,8 +51,13 @@ export async function createClosedVault(
 }
 
 /**
- * Creates the loan broker that lends from a vault, on the terms SPEC.md 4.2 sets for a
- * confidential broker: no management fee and no first-loss cover, so depositors carry all losses.
+ * Creates the loan broker that lends from a vault, with no management fee and no first-loss cover,
+ * the terms SPEC.md 4.2 sets for a confidential broker, so depositors carry all losses.
+ *
+ * The broker is not confidential yet: SPEC.md 6 also needs `tfLoanBrokerConfidential`, a
+ * `HolderEncryptionKey` and a `ZKProof` of that key, which this xrpl.js cannot build. Until the
+ * protocol fork lands, `LoanBrokerDraw` from this broker fails with `tecNO_PERMISSION`
+ * (SPEC.md 7.2).
  *
  * @param client - Connected client.
  * @param owner - The vault owner, who becomes the broker.
