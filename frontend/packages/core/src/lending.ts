@@ -1,4 +1,6 @@
-import type { Client, Wallet } from 'xrpl'
+import type { Client, LedgerEntry, Wallet } from 'xrpl'
+
+import { rippledErrorCode } from './accounts.ts'
 
 import { submit } from './submit.ts'
 import type { Submitted } from './submit.ts'
@@ -27,7 +29,7 @@ export async function ledgerTime(client: Client): Promise<number> {
  * immutable and must be at least 180 seconds apart.
  *
  * @param client - Connected client.
- * @param owner - Vault owner (the loan broker's account).
+ * @param owner - Vault owner, who later creates the LoanBroker in the app.
  * @param mptIssuanceID - Token the vault holds.
  * @param dates - Phase boundaries in Ripple Epoch seconds.
  * @returns The vault ID and transaction hash.
@@ -51,33 +53,25 @@ export async function createClosedVault(
 }
 
 /**
- * Creates the loan broker that lends from a vault, with no management fee and no first-loss cover,
- * the terms SPEC.md 4.2 sets for a confidential broker, so depositors carry all losses.
- *
- * The broker is not confidential yet: SPEC.md 6 also needs `tfLoanBrokerConfidential`, a
- * `HolderEncryptionKey` and a `ZKProof` of that key, which this xrpl.js cannot build. Until the
- * protocol fork lands, `LoanBrokerDraw` from this broker fails with `tecNO_PERMISSION`
- * (SPEC.md 7.2).
+ * Reads a vault from the latest validated ledger.
  *
  * @param client - Connected client.
- * @param owner - The vault owner, who becomes the broker.
- * @param vaultID - Vault to lend from.
- * @param debtMaximum - Most the broker may owe the vault. Drawn funds become confidential supply,
- *   which bounds every decryption, so this cap also bounds balance-read time.
- * @returns The LoanBroker ID and transaction hash.
+ * @param vaultID - Vault to look up.
+ * @returns The vault, or undefined when it does not exist.
  */
-export async function createLoanBroker(
+export async function readVault(
   client: Client,
-  owner: Wallet,
   vaultID: string,
-  debtMaximum: bigint,
-): Promise<{ loanBrokerID: string; hash: string }> {
-  const tx = {
-    TransactionType: 'LoanBrokerSet',
-    Account: owner.address,
-    VaultID: vaultID,
-    DebtMaximum: debtMaximum.toString(),
-  } as const
-  const submitted = await submit(client, tx, owner)
-  return { loanBrokerID: createdId(submitted, 'LoanBroker'), hash: submitted.hash }
+): Promise<LedgerEntry.Vault | undefined> {
+  try {
+    const { result } = await client.request({
+      command: 'ledger_entry',
+      index: vaultID,
+      ledger_index: 'validated',
+    })
+    return result.node as unknown as LedgerEntry.Vault
+  } catch (error) {
+    if (rippledErrorCode(error) === 'entryNotFound') return undefined
+    throw error
+  }
 }

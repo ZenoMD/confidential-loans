@@ -5,18 +5,23 @@ import type { ConfidentialKeypair, Wallet } from '@confidential-loans/core/accou
 
 const ENV_PATH = new URL('.env', import.meta.url)
 
-/** Two accounts for each role in the demo, plus the token issuer and its treasury. */
+/** The demo's signers plus the token issuer. */
 export const ROLES = [
   'issuer',
-  'treasury',
   'brokerA',
-  'brokerB',
   'depositorA',
   'depositorB',
   'borrowerA',
   'borrowerB',
 ] as const
 export type Role = (typeof ROLES)[number]
+
+/**
+ * ElGamal keys with a seed of their own: the MPT Auditor (`CONF_SEED_AUDITOR`), the Loan Auditor
+ * (`CONF_SEED_LOAN_AUDITOR`) and Broker A's Broker Key (`CONF_SEED_BROKERA`), which encrypts the
+ * Lending Balance.
+ */
+export type KeyName = 'AUDITOR' | 'LOAN_AUDITOR' | 'BROKERA'
 
 if (existsSync(ENV_PATH)) process.loadEnvFile(ENV_PATH)
 
@@ -31,35 +36,35 @@ function readOrCreateSeed(key: string): string {
 
 /**
  * Reads `SEED_<ROLE>` from `scripts/.env`, generating and appending a new seed when it is missing.
- *
- * The file is gitignored. Seeds are never printed.
+ * The file is gitignored. Only `export-kit.ts` prints seeds.
  *
  * @param role - Account role.
- * @returns The role's wallet.
+ * @returns The family seed.
  */
+export function roleSeed(role: Role): string {
+  return readOrCreateSeed(`SEED_${role.toUpperCase()}`)
+}
+
 export function roleWallet(role: Role): Wallet {
-  return walletFromSeed(readOrCreateSeed(`SEED_${role.toUpperCase()}`))
+  return walletFromSeed(roleSeed(role))
 }
 
 /**
- * Derives a role's ElGamal keypair from its wallet seed, as the xrpl.org samples do.
- *
- * One secret restores both the account and its confidential balances; anyone holding the seed
- * can also decrypt them.
+ * Derives a role's ElGamal keypair from its wallet seed, as the xrpl.org samples do. One secret
+ * restores both the account and its confidential balances.
  *
  * @param role - Account role.
  * @returns The keypair that encrypts and decrypts the role's confidential balances.
  */
 export function confidentialKey(role: Role): ConfidentialKeypair {
-  return confidentialKeypair(readOrCreateSeed(`SEED_${role.toUpperCase()}`))
+  return confidentialKeypair(roleSeed(role))
 }
 
-/**
- * Loads the auditor's ElGamal keypair. The auditor has no account, so its key has its own seed,
- * `CONF_SEED_AUDITOR`.
- *
- * @returns The auditor keypair.
- */
-export function auditorKey(): ConfidentialKeypair {
-  return confidentialKeypair(readOrCreateSeed('CONF_SEED_AUDITOR'))
+/** Reads `CONF_SEED_<NAME>` from `scripts/.env`, generating it when it is missing. */
+export function keySeed(name: KeyName): string {
+  return readOrCreateSeed(`CONF_SEED_${name}`)
+}
+
+export function namedKey(name: KeyName): ConfidentialKeypair {
+  return confidentialKeypair(keySeed(name))
 }

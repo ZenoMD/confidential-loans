@@ -1,5 +1,5 @@
 import { MPTokenIssuanceCreateFlags, encodeMPTokenMetadata } from 'xrpl'
-import type { Client, TransactionMetadata, Wallet } from 'xrpl'
+import type { Client, LedgerEntry, TransactionMetadata, Wallet } from 'xrpl'
 
 import { rippledErrorCode } from './accounts.ts'
 import { submit } from './submit.ts'
@@ -8,22 +8,25 @@ import { submit } from './submit.ts'
 const MAXIMUM_AMOUNT = '1000000000'
 
 /**
- * Checks whether an MPT issuance exists in the latest validated ledger.
+ * Reads an MPT issuance from the latest validated ledger.
  *
  * @param client - Connected client.
  * @param mptIssuanceID - Issuance to look up.
- * @returns True when the issuance exists.
+ * @returns The issuance, or undefined when it does not exist.
  */
-export async function tokenExists(client: Client, mptIssuanceID: string): Promise<boolean> {
+export async function readToken(
+  client: Client,
+  mptIssuanceID: string,
+): Promise<LedgerEntry.MPTokenIssuance | undefined> {
   try {
-    await client.request({
+    const { result } = await client.request({
       command: 'ledger_entry',
       mpt_issuance: mptIssuanceID,
       ledger_index: 'validated',
     })
-    return true
+    return result.node as unknown as LedgerEntry.MPTokenIssuance
   } catch (error) {
-    if (rippledErrorCode(error) === 'entryNotFound') return false
+    if (rippledErrorCode(error) === 'entryNotFound') return undefined
     throw error
   }
 }

@@ -3,7 +3,6 @@ import {
   loadMptCrypto,
   prepareConfidentialConvert,
   prepareConfidentialMergeInbox,
-  prepareConfidentialSend,
 } from 'xrpl'
 import type { Client, ConfidentialKeypair, LedgerEntry, Wallet } from 'xrpl'
 
@@ -110,31 +109,6 @@ export async function mergeInbox(
 ): Promise<string> {
   const tx = await prepareConfidentialMergeInbox(client, { account: holder.address, mptIssuanceID })
   return (await submit(client, tx, holder)).hash
-}
-
-/**
- * Sends a confidential amount: the ledger records only ciphertexts and a proof that the sender
- * can afford it. The proof binds the sender's sequence and balance, so nothing else may be
- * submitted from the sender between building and submitting it.
- *
- * @returns The transaction hash.
- */
-export async function sendConfidential(
-  client: Client,
-  sender: Wallet,
-  destination: string,
-  mptIssuanceID: string,
-  amount: bigint,
-  senderKeypair: ConfidentialKeypair,
-): Promise<string> {
-  const tx = await prepareConfidentialSend(client, {
-    account: sender.address,
-    destination,
-    mptIssuanceID,
-    amount,
-    senderKeypair,
-  })
-  return (await submit(client, tx, sender)).hash
 }
 
 /** Decrypts with mpt-crypto, loaded through xrpl. The decrypt the app passes to the display. */

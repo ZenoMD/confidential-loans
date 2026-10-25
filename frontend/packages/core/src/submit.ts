@@ -185,19 +185,36 @@ export async function submit(
   tx: SubmittableTransaction,
   wallet: Wallet,
 ): Promise<Submitted> {
-  const signed = wallet.sign(await client.autofill(tx))
-  const lastLedger = decode(signed.tx_blob)['LastLedgerSequence']
+  return submitSigned(client, wallet.sign(await client.autofill(tx)))
+}
+
+/**
+ * Submits a transaction that is already signed, such as a co-signed `LoanSet`, then waits for a
+ * validated result as `submit` does.
+ *
+ * @param client - Connected client.
+ * @param signed - The signed blob and its hash. The blob must carry `LastLedgerSequence`.
+ * @returns The hash, the validated transaction and its metadata.
+ * @throws As `submit`.
+ */
+export async function submitSigned(
+  client: Client,
+  signed: { readonly tx_blob: string; readonly hash: string },
+): Promise<Submitted> {
+  const decoded = decode(signed.tx_blob)
+  const lastLedger = decoded['LastLedgerSequence']
   if (typeof lastLedger !== 'number')
     throw new Error('Signed transaction has no LastLedgerSequence')
+  const transactionType = String(decoded['TransactionType'])
   const { validated: first } = await readNodeLedgers(client)
   const prelim = await client.request({ command: 'submit', tx_blob: signed.tx_blob })
   const engine = prelim.result.engine_result
   if (NEVER_APPLIES.some((prefix) => engine.startsWith(prefix))) {
-    throw new TxFailed(tx.TransactionType, engine)
+    throw new TxFailed(transactionType, engine)
   }
   const response = await waitValidated(client, signed.hash, { first, last: lastLedger })
   const validated = { tx: response.result.tx_json, meta: metadata(response) }
   const code = validated.meta.TransactionResult
-  if (code !== 'tesSUCCESS') throw new TxFailed(tx.TransactionType, code, signed.hash, validated)
+  if (code !== 'tesSUCCESS') throw new TxFailed(transactionType, code, signed.hash, validated)
   return { hash: signed.hash, ...validated }
 }

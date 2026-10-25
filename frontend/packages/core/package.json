@@ -6,7 +6,7 @@
     "./*": "./src/*.ts"
   },
   "dependencies": {
-    "xrpl": "5.3.0"
+    "xrpl": "link:../../../xrpl.js/packages/xrpl"
   },
   "devDependencies": {
     "@types/node": "26.6.5"

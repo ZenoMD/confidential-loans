@@ -30,18 +30,18 @@ transfer amendments enabled.
 ## Scripts
 
 Setup for the steps that have no screen in the demo. Run from `frontend/` with Node 22 after
-`pnpm install`. The setup scripts skip work that is already on the ledger; `create-vault` makes a
-fresh vault each run, because a vault's phase dates are fixed when it is created. Seeds live in `frontend/scripts/.env`, which git
-ignores.
+`pnpm install`. Every script skips what is already on the ledger, so after a devnet reset
+`node scripts/setup.ts` recreates whatever is missing. Seeds live in `frontend/scripts/.env` and
+ledger IDs in `frontend/scripts/state.json`; git ignores both.
 
 | Command | What it does |
 |---|---|
-| `node scripts/setup-wallets.ts` | Creates and faucet-funds two accounts per role (broker, depositor, borrower) plus the issuer and treasury |
-| `node scripts/issue-token.ts` | Issues CUSD, an MPT that can hold confidential balances, and registers the issuer and auditor decryption keys |
-| `node scripts/fund-holders.ts` | Opts every account in to CUSD, pays depositors public balances for vault deposits, and gives borrowers confidential balances |
-| `node scripts/create-vault.ts` | Creates a closed-ended vault and a loan broker with no fee or first-loss cover; `--help` lists the phase-timing options |
+| `node scripts/setup.ts` | Runs the four scripts below in order |
+| `node scripts/setup-wallets.ts` | Creates and faucet-funds the issuer, Broker A, two depositors and two borrowers |
+| `node scripts/issue-token.ts` | Issues CUSD, an MPT that can hold confidential balances, and registers the issuer and MPT Auditor keys |
+| `node scripts/fund-holders.ts` | Opts every account in to CUSD, tops depositors up to 150,000 public CUSD and borrowers up to 100,000 confidential CUSD |
+| `node scripts/create-vault.ts` | Creates the run's closed-ended vault (300 s Subscription, 600 s Investment by default) unless the saved one still takes deposits; `--help` lists the options |
+| `node scripts/export-kit.ts` | Prints the kit, the JSON the app needs to play every role: addresses, seeds and ledger IDs |
 
-The loan broker `create-vault` makes is not yet confidential. SPEC.md §6 requires the
-`tfLoanBrokerConfidential` flag, a `HolderEncryptionKey` and a `ZKProof` of that key, which the
-current xrpl.js cannot build. Until the protocol fork lands, `LoanBrokerDraw` from this broker
-fails with `tecNO_PERMISSION`.
+Step 1 of the app creates the confidential LoanBroker, so no script does. The kit holds every
+demo seed: never commit it, and never put it in the bundle, a `VITE_*` variable or a URL.
