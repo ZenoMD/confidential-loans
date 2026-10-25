@@ -17,6 +17,12 @@
   cursor: pointer;
 }
 
+.cta[data-size='small'] .cta-button {
+  min-height: 40px;
+  padding: 0 18px;
+  font: var(--type-control-on);
+}
+
 .cta-button:disabled {
   border-color: var(--rule-strong);
   background: transparent;

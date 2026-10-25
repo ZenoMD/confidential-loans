@@ -17,8 +17,9 @@ const ISSUANCE = '0000046B4127945F4651C08EC3394795A3A78A67860AA34C'
 const SHARES = '0000047A4127945F4651C08EC3394795A3A78A67860AA34C'
 const VAULT = '5E1AF944C0BBAA2E1CF466AB6F0EF0226A3248ACCBBBB95B7D61CFDA3745B909'
 const BROKER = 'D80405EF351D9F381E0436BFD8096B5FA002149FD549B5775F4CD2D2D3C16A1F'
-const LOAN_A = '9D7FCAFBCB11321EAF4E1FC8D70F45551BE0260714C4AF1D985C20F17D9AA213'
-const LOAN_B = '2ABC7593BF245CE518B2277834CAA31AC95E7DBB4217257438F76B0BD0F17C75'
+const LOAN_1 = '9D7FCAFBCB11321EAF4E1FC8D70F45551BE0260714C4AF1D985C20F17D9AA213'
+const LOAN_2 = '2ABC7593BF245CE518B2277834CAA31AC95E7DBB4217257438F76B0BD0F17C75'
+const LOAN_3 = '6F3B0C1D2E4A5B6C7D8E9F00112233445566778899AABBCCDDEEFF0011223344'
 /** Ledger close time when Subscription ends; Investment lasts 600 s. */
 const SUBSCRIPTION = 846_219_727
 const REDEMPTION = SUBSCRIPTION + 600
@@ -92,7 +93,8 @@ class FakeDevnet {
   closeTime = SUBSCRIPTION - 100
   readonly entries = new Map<string, Entry>()
   readonly owned = new Map<string, Entry[]>()
-  readonly history = new Map<string, Logged[]>()
+  /** brokerA's next Sequence, for autofill and account_info. */
+  sequence = 7
   readonly submitted: Entry[] = []
   readonly validated = new Map<string, Logged>()
   onSubmit: (tx: Entry) => string = () => 'tesSUCCESS'
@@ -127,15 +129,11 @@ class FakeDevnet {
       tx_json: { Account: account, date: this.closeTime, ...tx },
       meta: { TransactionResult: result, TransactionIndex: 0, AffectedNodes: [] },
     }
-    for (const who of [account, tx['Counterparty']]) {
-      if (typeof who !== 'string') continue
-      this.history.set(who, [...(this.history.get(who) ?? []), logged])
-    }
     return logged
   }
 
   async autofill(tx: Entry): Promise<Entry> {
-    return { Fee: '12', Sequence: 7, LastLedgerSequence: this.ledgerIndex + 20, ...tx }
+    return { Fee: '12', Sequence: this.sequence, LastLedgerSequence: this.ledgerIndex + 20, ...tx }
   }
 
   async getLedgerIndex(): Promise<number> {
@@ -154,11 +152,9 @@ class FakeDevnet {
       case 'ledger_entry':
         return { node: this.lookup(request) }
       case 'account_info':
-        return { account_data: { Sequence: 7 } }
+        return { account_data: { Sequence: this.sequence } }
       case 'account_objects':
         return { account_objects: this.owned.get(`${request['account']}:${request['type']}`) ?? [] }
-      case 'account_tx':
-        return { transactions: this.accountTx(request) }
       case 'server_info':
         return { info: { validated_ledger: { seq: this.ledgerIndex }, complete_ledgers: '1-9999' } }
       case 'submit':
@@ -183,14 +179,6 @@ class FakeDevnet {
     return found
   }
 
-  private accountTx(request: Request): Logged[] {
-    const min = Number(request['ledger_index_min'])
-    const max = Number(request['ledger_index_max'])
-    return (this.history.get(String(request['account'])) ?? []).filter(
-      (t) => (min < 0 || t.ledger_index >= min) && t.ledger_index <= max,
-    )
-  }
-
   private submit(blob: string): Entry {
     const tx = decode(blob)
     this.submitted.push(tx)
@@ -202,7 +190,7 @@ class FakeDevnet {
   }
 }
 
-/** A devnet in Investment with the vault funded, the broker drawn and loan A open. */
+/** A devnet in Investment with the vault funded, the broker drawn and borrowerA's loan 1 open. */
 async function investing(): Promise<FakeDevnet> {
   const devnet = new FakeDevnet()
   devnet.closeTime = SUBSCRIPTION + 40
@@ -255,12 +243,16 @@ async function investing(): Promise<FakeDevnet> {
     devnet.set(`token:${ISSUANCE}:${address(depositor)}`, { MPTAmount: '0' })
     devnet.set(`token:${SHARES}:${address(depositor)}`, { MPTAmount: '1500' })
   }
-  await addLoan(devnet, 'A', LOAN_A)
+  await addLoan(devnet, 'borrowerA', LOAN_1, 1)
   return devnet
 }
 
-async function addLoan(devnet: FakeDevnet, label: 'A' | 'B', index: string): Promise<Entry> {
-  const borrower = label === 'A' ? 'borrowerA' : 'borrowerB'
+async function addLoan(
+  devnet: FakeDevnet,
+  borrower: 'borrowerA' | 'borrowerB',
+  index: string,
+  sequence: number,
+): Promise<Entry> {
   const holders = [key(borrower), key('brokerA'), key('loanAuditor')].map((k) => k.publicKey)
   const encryptAll = (value: bigint) => Promise.all(holders.map((k) => encrypt(value, k)))
   const [p, o, q] = await Promise.all([
@@ -273,7 +265,7 @@ async function addLoan(devnet: FakeDevnet, label: 'A' | 'B', index: string): Pro
     LoanBrokerID: BROKER,
     Borrower: address(borrower),
     Flags: 0x0008_0000,
-    LoanSequence: label === 'A' ? 1 : 2,
+    LoanSequence: sequence,
     StartDate: LOAN_START,
     PaymentInterval: 60,
     GracePeriod: 60,
@@ -291,7 +283,8 @@ async function addLoan(devnet: FakeDevnet, label: 'A' | 'B', index: string): Pro
     BrokerEncryptedPeriodicPayment: q[1],
     LoanAuditorEncryptedPeriodicPayment: q[2],
   }
-  devnet.owned.set(`${address(borrower)}:loan`, [loan])
+  const owner = `${address(borrower)}:loan`
+  devnet.owned.set(owner, [...(devnet.owned.get(owner) ?? []), loan])
   devnet.set(`index:${index}`, loan)
   return loan
 }
@@ -370,147 +363,58 @@ it('decrypts the Lending Balance for the broker only', async () => {
   demo.close()
 })
 
-it('shows loan terms to its borrower, the broker and the auditor, and no one else', async () => {
+it('lists the LoanBroker loans of both borrowers, oldest first', async () => {
   const devnet = await investing()
-  await addLoan(devnet, 'B', LOAN_B)
+  await addLoan(devnet, 'borrowerA', LOAN_3, 3)
+  await addLoan(devnet, 'borrowerB', LOAN_2, 2)
+  const foreign = await addLoan(devnet, 'borrowerB', 'other', 0)
+  foreign['LoanBrokerID'] = 'other'
   const demo = await openDemo(kit, devnet.ledger)
-  const owedA = (s: Snapshot): Shown => s.loans.A?.amountOwed ?? { visibility: 'redacted' }
-  const decrypted = { visibility: 'decrypted', value: 1050n }
-  for (const viewer of ['borrowerA', 'brokerA', 'auditor'] as const) {
-    assert.deepEqual(await settled(demo, viewer, owedA), decrypted, viewer)
+  const { loans } = demo.snapshot('outsider')
+  assert.deepEqual(
+    loans.map((l) => `${l.loanSequence} ${l.borrower} ${l.loanID}`),
+    [`1 borrowerA ${LOAN_1}`, `2 borrowerB ${LOAN_2}`, `3 borrowerA ${LOAN_3}`],
+  )
+  assert.equal(loans[0]?.status, 'active')
+  assert.equal(loans[0]?.nextPaymentDueDate, toMs(LOAN_START + 60))
+  demo.close()
+})
+
+it('shows loan terms to its borrower and the broker, and no one else', async () => {
+  const devnet = await investing()
+  const demo = await openDemo(kit, devnet.ledger)
+  const owed = (s: Snapshot): Shown => s.loans[0]?.amountOwed ?? { visibility: 'redacted' }
+  for (const viewer of ['borrowerA', 'brokerA'] as const) {
+    assert.deepEqual(await settled(demo, viewer, owed), { visibility: 'decrypted', value: 1050n })
   }
   for (const viewer of ['borrowerB', 'outsider', 'depositorA'] as const) {
-    assert.deepEqual(await settled(demo, viewer, owedA), { visibility: 'redacted' }, viewer)
+    assert.deepEqual(await settled(demo, viewer, owed), { visibility: 'redacted' }, viewer)
   }
-  const loan = demo.snapshot('outsider').loans.A
-  assert.equal(loan?.status, 'active')
-  assert.equal(loan?.borrower, 'borrowerA')
-  assert.equal(loan?.nextPaymentDueDate, toMs(LOAN_START + 60))
   demo.close()
 })
 
 it('reads a loan with no PaymentRemaining as repaid', async () => {
   const devnet = await investing()
-  const loan = await addLoan(devnet, 'A', LOAN_A)
-  delete loan['PaymentRemaining']
-  loan['NextPaymentDueDate'] = 0
+  const [loan] = devnet.owned.get(`${address('borrowerA')}:loan`) ?? []
+  delete loan?.['PaymentRemaining']
+  if (loan !== undefined) loan['NextPaymentDueDate'] = 0
   const demo = await openDemo(kit, devnet.ledger)
-  assert.equal(demo.snapshot('outsider').loans.A?.status, 'repaid')
-  assert.equal(demo.snapshot('outsider').loans.A?.paymentRemaining, 0)
-  assert.equal(demo.snapshot('outsider').loans.A?.nextPaymentDueDate, undefined)
+  const [view] = demo.snapshot('outsider').loans
+  assert.equal(view?.status, 'repaid')
+  assert.equal(view?.paymentRemaining, 0)
+  assert.equal(view?.nextPaymentDueDate, undefined)
   demo.close()
 })
 
-it('logs the run in ledger order, with each amount public or encrypted', async () => {
+it('values shares at their part of the assets less the unrealized loss', async () => {
   const devnet = await investing()
-  const broker = address('brokerA')
-  devnet.log(address('borrowerA'), {
-    TransactionType: 'ConfidentialMPTMergeInbox',
-    MPTokenIssuanceID: ISSUANCE,
-  })
-  devnet.log(broker, { TransactionType: 'LoanBrokerSet', VaultID: VAULT })
-  const amount = (value: string) => ({ mpt_issuance_id: ISSUANCE, value })
-  devnet.log(address('depositorA'), {
-    TransactionType: 'VaultDeposit',
-    VaultID: VAULT,
-    Amount: amount('1500'),
-  })
-  devnet.log(address('depositorA'), { TransactionType: 'Payment', Destination: broker })
-  devnet.log(broker, {
-    TransactionType: 'LoanBrokerDraw',
-    LoanBrokerID: BROKER,
-    Amount: amount('2000'),
-  })
-  devnet.log(broker, { TransactionType: 'LoanBrokerMergeInbox', LoanBrokerID: BROKER })
-  devnet.log(broker, {
-    TransactionType: 'LoanSet',
-    LoanBrokerID: BROKER,
-    Counterparty: address('borrowerA'),
-    SenderEncryptedAmount: await encrypt(1000n, key('brokerA').publicKey),
-    AuditorEncryptedAmount: await encrypt(1000n, key('mptAuditor').publicKey),
-  })
-  devnet.log(address('borrowerA'), {
-    TransactionType: 'ConfidentialMPTMergeInbox',
-    MPTokenIssuanceID: ISSUANCE,
-  })
-  devnet.log(address('borrowerA'), {
-    TransactionType: 'ConfidentialLoanPay',
-    LoanID: LOAN_A,
-    LoanAuditorEncryptedAmount: await encrypt(1050n, key('loanAuditor').publicKey),
-  })
-  devnet.log(broker, { TransactionType: 'LoanBrokerMergeInbox', LoanBrokerID: BROKER })
-  devnet.log(broker, { TransactionType: 'LoanManage', LoanID: LOAN_A, Flags: 0x0002_0000 })
-  devnet.log(
-    address('depositorB'),
-    { TransactionType: 'VaultWithdraw', VaultID: VAULT, Amount: amount('1500') },
-    'tecINSUFFICIENT_FUNDS',
-  )
+  const vault = devnet.entries.get(`index:${VAULT}`) ?? {}
+  vault['LossUnrealized'] = '600'
   const demo = await openDemo(kit, devnet.ledger)
-  const { log } = demo.snapshot('outsider')
-  assert.deepEqual(
-    log.map((r) => `${r.step} ${r.type} ${r.signers.join('+')} ${r.loan ?? '-'} ${r.result}`),
-    [
-      '1 LoanBrokerSet brokerA - tesSUCCESS',
-      '2 VaultDeposit depositorA - tesSUCCESS',
-      '3 LoanBrokerDraw brokerA - tesSUCCESS',
-      '3 LoanBrokerMergeInbox brokerA - tesSUCCESS',
-      '4 LoanSet brokerA+borrowerA A tesSUCCESS',
-      '6 ConfidentialMPTMergeInbox borrowerA A tesSUCCESS',
-      '6 ConfidentialLoanPay borrowerA A tesSUCCESS',
-      '7 LoanBrokerMergeInbox brokerA - tesSUCCESS',
-      '8 LoanManage brokerA A tesSUCCESS',
-      '10 VaultWithdraw depositorB - tecINSUFFICIENT_FUNDS',
-    ],
-  )
-  assert.deepEqual(log[1]?.amount, { visibility: 'public', value: 1500n })
-  assert.deepEqual(log[4]?.amount, { visibility: 'redacted' })
-  assert.equal(log[8]?.flag, 'Impaired')
-  assert.match(log[0]?.explorerUrl ?? '', /\/transactions\/[0-9A-F]{64}$/)
-  const auditorSees = async (i: number) =>
-    settled(demo, 'auditor', (s) => s.log[i]?.amount ?? { visibility: 'redacted' })
-  assert.deepEqual(await auditorSees(4), { visibility: 'decrypted', value: 1000n })
-  assert.deepEqual(await auditorSees(6), { visibility: 'decrypted', value: 1050n })
-  const b = demo.snapshot('depositorB').depositors.depositorB
-  assert.equal(b.redeemFailure, 'tecINSUFFICIENT_FUNDS')
-  assert.equal(b.redeemed, undefined)
-  assert.deepEqual(demo.snapshot('outsider').depositors.depositorA.deposited, {
-    visibility: 'public',
-    value: 1500n,
-  })
-  demo.close()
-})
-
-it('reads a redemption payout into a wallet the deposit had emptied', async () => {
-  const devnet = await investing()
-  const depositor = address('depositorA')
-  const withdrawal = devnet.log(depositor, {
-    TransactionType: 'VaultWithdraw',
-    VaultID: VAULT,
-    Amount: { mpt_issuance_id: SHARES, value: '1500' },
-  })
-  // As the devnet records it: MPTAmount was absent at 0, so PreviousFields does not name it.
-  withdrawal.meta['AffectedNodes'] = [
-    {
-      ModifiedNode: {
-        LedgerEntryType: 'MPToken',
-        FinalFields: { Account: depositor, MPTokenIssuanceID: ISSUANCE, MPTAmount: '1500' },
-        PreviousFields: {},
-      },
-    },
-    {
-      ModifiedNode: {
-        LedgerEntryType: 'Vault',
-        LedgerIndex: VAULT,
-        FinalFields: { AssetsTotal: '1500', AssetsAvailable: '550' },
-        PreviousFields: { AssetsTotal: '3000', AssetsAvailable: '2050' },
-      },
-    },
-  ]
-  const demo = await openDemo(kit, devnet.ledger)
-  const snapshot = demo.snapshot('outsider')
-  const payout = { visibility: 'public', value: 1500n }
-  assert.deepEqual(snapshot.log.at(-1)?.amount, payout)
-  assert.deepEqual(snapshot.depositors.depositorA.redeemed, payout)
+  const a = demo.snapshot('outsider').depositors.depositorA
+  assert.equal(a.shares, 1500n)
+  assert.deepEqual(a.value, { visibility: 'public', value: 1200n })
+  assert.deepEqual(a.wallet, { visibility: 'public', value: 0n })
   demo.close()
 })
 
@@ -547,31 +451,60 @@ it('act creates a confidential LoanBroker under the Broker Key', async (t) => {
   assert.equal(tx?.['Flags'], 0x0002_0000)
   assert.equal(tx?.['HolderEncryptionKey'], key('brokerA').publicKey)
   assert.equal(demo.snapshot('brokerA').submitting, undefined)
-  assert.equal(demo.snapshot('brokerA').log.at(-1)?.type, 'LoanBrokerSet')
   demo.close()
 })
 
 it('has the broker sign a LoanSet and the borrower co-sign that blob', async (t) => {
   const devnet = await investing()
-  devnet.owned.delete(`${address('borrowerA')}:loan`)
   const demo = await openDemo(kit, devnet.ledger)
   t.mock.timers.enable({ apis: ['setTimeout'] })
-  await settle(t, demo.act({ type: 'LoanSetSign', loan: 'A', terms: TERMS }))
+  await settle(t, demo.act({ type: 'LoanSetSign', borrower: 'borrowerB', terms: TERMS }))
   assert.equal(devnet.submitted.length, 0, 'signing submits nothing')
-  assert.deepEqual(demo.snapshot('brokerA').offers.A?.terms, TERMS)
+  const offer = demo.snapshot('brokerA').offer
+  assert.equal(offer?.borrower, 'borrowerB')
+  assert.deepEqual(offer?.terms, TERMS)
+  assert.equal(offer?.stale, false)
 
-  await settle(t, demo.act({ type: 'LoanSetCosign', loan: 'A' }))
+  await settle(t, demo.act({ type: 'LoanSetCosign', borrower: 'borrowerB' }))
   const [tx] = devnet.submitted
   assert.equal(tx?.['TransactionType'], 'LoanSet')
   assert.equal(tx?.['Account'], address('brokerA'))
-  assert.equal(tx?.['Counterparty'], address('borrowerA'))
+  assert.equal(tx?.['Counterparty'], address('borrowerB'))
   assert.equal(tx?.['SigningPubKey'], walletFromSeed(kit.accounts.brokerA.seed).publicKey)
   const counterparty = tx?.['CounterpartySignature'] as { SigningPubKey?: string } | undefined
-  assert.equal(counterparty?.SigningPubKey, walletFromSeed(kit.accounts.borrowerA.seed).publicKey)
+  assert.equal(counterparty?.SigningPubKey, walletFromSeed(kit.accounts.borrowerB.seed).publicKey)
   assert.equal(tx?.['LoanAuditorEncryptionKey'], key('loanAuditor').publicKey)
   const owed = String(tx?.['BorrowerEncryptedAmountOwed'])
-  assert.equal(await crypto.decryptAmount(owed, key('borrowerA').privateKey, 4000n), 1050n)
-  assert.equal(demo.snapshot('brokerA').offers.A, undefined)
+  assert.equal(await crypto.decryptAmount(owed, key('borrowerB').privateKey, 4000n), 1050n)
+  assert.equal(demo.snapshot('brokerA').offer, undefined)
+  demo.close()
+})
+
+it('marks the offer stale once the broker uses its Sequence, and withdraws it', async (t) => {
+  const devnet = await investing()
+  const demo = await openDemo(kit, devnet.ledger)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  const sign = { type: 'LoanSetSign', borrower: 'borrowerA', terms: TERMS } as const
+  await settle(t, demo.act(sign))
+  assert.deepEqual(gate(demo.snapshot('outsider'), sign), {
+    open: false,
+    reason: 'blocked',
+    why: 'An offer is waiting for its co-signature',
+  })
+  devnet.sequence = 8
+  devnet.close()
+  await new Promise<void>((resolve) => demo.subscribe(resolve))
+  const s = demo.snapshot('outsider')
+  assert.equal(s.offer?.stale, true)
+  assert.deepEqual(gate(s, { type: 'LoanSetCosign', borrower: 'borrowerA' }), {
+    open: false,
+    reason: 'blocked',
+    why: 'The offer expired: the Broker must sign it again',
+  })
+  assert.deepEqual(gate(s, sign), { open: true })
+  await settle(t, demo.act({ type: 'LoanSetWithdraw' }))
+  assert.equal(demo.snapshot('outsider').offer, undefined)
+  assert.equal(devnet.submitted.length, 0)
   demo.close()
 })
 
@@ -579,14 +512,32 @@ it('pays a loan in full with exactly the amount owed', async (t) => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
   t.mock.timers.enable({ apis: ['setTimeout'] })
-  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loan: 'A' }))
+  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_1, mode: 'full' }))
   const [tx] = devnet.submitted
   assert.equal(tx?.['TransactionType'], 'ConfidentialLoanPay')
   assert.equal(tx?.['Account'], address('borrowerA'))
-  assert.equal(tx?.['LoanID'], LOAN_A)
+  assert.equal(tx?.['LoanID'], LOAN_1)
   assert.equal(tx?.['Flags'], 0x0002_0000)
   const paid = String(tx?.['DestinationEncryptedAmount'])
   assert.equal(await crypto.decryptAmount(paid, key('brokerA').privateKey, 4000n), 1050n)
+  demo.close()
+})
+
+it('pays an installment of the periodic payment', async (t) => {
+  const devnet = await investing()
+  const loan = await addLoan(devnet, 'borrowerB', LOAN_2, 2)
+  loan['PaymentRemaining'] = 2
+  const periodic = await encrypt(525n, key('borrowerB').publicKey)
+  loan['BorrowerEncryptedPeriodicPayment'] = periodic
+  const demo = await openDemo(kit, devnet.ledger)
+  t.mock.timers.enable({ apis: ['setTimeout'] })
+  await settle(t, demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_2, mode: 'installment' }))
+  const [tx] = devnet.submitted
+  assert.equal(tx?.['Account'], address('borrowerB'))
+  assert.equal(tx?.['Flags'] ?? 0, 0)
+  assert.equal(typeof tx?.['PeriodicPaymentCommitment'], 'string')
+  const paid = String(tx?.['DestinationEncryptedAmount'])
+  assert.equal(await crypto.decryptAmount(paid, key('brokerA').privateKey, 4000n), 525n)
   demo.close()
 })
 
@@ -605,19 +556,19 @@ it('impairs and defaults with LoanManage, and redeems every share', async (t) =>
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
   t.mock.timers.enable({ apis: ['setTimeout'] })
-  await settle(t, demo.act({ type: 'LoanManage', loan: 'A', flag: 'impair' }))
-  await settle(t, demo.act({ type: 'LoanManage', loan: 'A', flag: 'default' }))
+  await settle(t, demo.act({ type: 'LoanManage', loanID: LOAN_1, flag: 'impair' }))
+  await settle(t, demo.act({ type: 'LoanManage', loanID: LOAN_1, flag: 'default' }))
   await settle(t, demo.act({ type: 'VaultWithdraw', depositor: 'depositorB' }))
   const [impair, defaulted, withdraw] = devnet.submitted
   assert.equal(impair?.['Flags'], 0x0002_0000)
   assert.equal(defaulted?.['Flags'], 0x0001_0000)
-  assert.equal(defaulted?.['LoanID'], LOAN_A)
+  assert.equal(defaulted?.['LoanID'], LOAN_1)
   assert.equal(withdraw?.['Account'], address('depositorB'))
   assert.deepEqual(withdraw?.['Amount'], { mpt_issuance_id: SHARES, value: '1500' })
   demo.close()
 })
 
-it('act rejects with the engine code and keeps the failed transaction in the log', async (t) => {
+it('act rejects with the engine code and the hash', async (t) => {
   const devnet = await investing()
   devnet.onSubmit = () => 'tecINSUFFICIENT_FUNDS'
   const demo = await openDemo(kit, devnet.ledger)
@@ -631,9 +582,7 @@ it('act rejects with the engine code and keeps the failed transaction in the log
       return true
     },
   )
-  const s = demo.snapshot('depositorB')
-  assert.equal(s.submitting, undefined)
-  assert.equal(s.depositors.depositorB.redeemFailure, 'tecINSUFFICIENT_FUNDS')
+  assert.equal(demo.snapshot('depositorB').submitting, undefined)
   demo.close()
 })
 
@@ -653,12 +602,15 @@ it('submits nothing when the proof cannot be built', async () => {
   const token = devnet.entries.get(`token:${ISSUANCE}:${address('borrowerA')}`) ?? {}
   token['ConfidentialBalanceSpending'] = await encrypt(10n, key('borrowerA').publicKey)
   const demo = await openDemo(kit, devnet.ledger)
-  await assert.rejects(demo.act({ type: 'ConfidentialLoanPay', loan: 'A' }), (error) => {
-    assert.ok(error instanceof ActionFailed)
-    assert.equal(error.code, 'buildFailed')
-    assert.match(error.message, /exceeds the confidential spending balance 10/)
-    return true
-  })
+  await assert.rejects(
+    demo.act({ type: 'ConfidentialLoanPay', loanID: LOAN_1, mode: 'full' }),
+    (error) => {
+      assert.ok(error instanceof ActionFailed)
+      assert.equal(error.code, 'buildFailed')
+      assert.match(error.message, /exceeds the confidential spending balance 10/)
+      return true
+    },
+  )
   assert.equal(devnet.submitted.length, 0)
   demo.close()
 })
@@ -666,7 +618,9 @@ it('submits nothing when the proof cannot be built', async () => {
 it('act rejects co-signing a loan the broker has not signed', async () => {
   const devnet = await investing()
   const demo = await openDemo(kit, devnet.ledger)
-  await assert.rejects(demo.act({ type: 'LoanSetCosign', loan: 'B' }), { code: 'unavailable' })
+  await assert.rejects(demo.act({ type: 'LoanSetCosign', borrower: 'borrowerB' }), {
+    code: 'unavailable',
+  })
   demo.close()
 })
 
@@ -687,17 +641,17 @@ function undeposited(devnet: FakeDevnet): void {
   devnet.set(`token:${SHARES}:${address('depositorA')}`, { MPTAmount: '0' })
 }
 
-it('gate marks a deposit done once the wallet is in the vault, in any phase', async () => {
-  const deposit = { type: 'VaultDeposit', depositor: 'depositorA', amount: 1500n } as const
-  assert.deepEqual(gate(await snapshotAt(SUBSCRIPTION), deposit), { open: false, reason: 'done' })
-  assert.deepEqual(gate(await snapshotAt(SUBSCRIPTION + 1), deposit), {
+it('gate opens a deposit within the wallet during Subscription only', async () => {
+  const deposit = (amount: bigint) =>
+    ({ type: 'VaultDeposit', depositor: 'depositorA', amount }) as const
+  assert.deepEqual(gate(await snapshotAt(SUBSCRIPTION), deposit(1n)), {
     open: false,
-    reason: 'done',
+    reason: 'blocked',
+    why: 'The wallet is empty',
   })
-  const empty = await snapshotAt(SUBSCRIPTION, (devnet) => {
-    devnet.set(`token:${SHARES}:${address('depositorA')}`, { MPTAmount: '0' })
-  })
-  assert.deepEqual(gate(empty, deposit), {
+  const funded = await snapshotAt(SUBSCRIPTION, undeposited)
+  assert.deepEqual(gate(funded, deposit(1500n)), { open: true })
+  assert.deepEqual(gate(funded, deposit(1501n)), {
     open: false,
     reason: 'closed',
     code: 'tecINSUFFICIENT_FUNDS',
@@ -730,54 +684,63 @@ it('gate closes deposits after Subscription and opens draws one second later', a
   })
 })
 
-it('gate opens loan B only after loan A, and only while its payment fits before redemption', async () => {
-  const s = await snapshotAt(SUBSCRIPTION + 40, (devnet) => {
-    devnet.owned.delete(`${address('borrowerA')}:loan`)
-    devnet.log(address('brokerA'), {
-      TransactionType: 'LoanBrokerMergeInbox',
-      LoanBrokerID: BROKER,
-    })
+it('gate opens an offer after a draw, with valid terms that end before redemption', async () => {
+  const sign = (terms: LoanTerms) =>
+    ({ type: 'LoanSetSign', borrower: 'borrowerA', terms }) as const
+  const undrawn = await snapshotAt(SUBSCRIPTION + 40, (devnet) => {
+    const broker = devnet.owned.get(`${address('brokerA')}:loan_broker`)?.[0]
+    if (broker !== undefined) broker['DebtTotal'] = '0'
   })
-  assert.deepEqual(gate(s, { type: 'LoanSetSign', loan: 'B', terms: TERMS }), {
+  assert.deepEqual(gate(undrawn, sign(TERMS)), {
     open: false,
-    reason: 'prerequisite',
-    step: 4,
-    loan: 'A',
+    reason: 'blocked',
+    why: 'Draw into the Lending Balance first',
   })
-  assert.deepEqual(gate(s, { type: 'LoanSetSign', loan: 'A', terms: TERMS }), { open: true })
-  const late = await snapshotAt(REDEMPTION - 119, (devnet) => {
-    devnet.owned.delete(`${address('borrowerA')}:loan`)
-    devnet.log(address('brokerA'), {
-      TransactionType: 'LoanBrokerMergeInbox',
-      LoanBrokerID: BROKER,
-    })
-  })
-  assert.deepEqual(gate(late, { type: 'LoanSetSign', loan: 'A', terms: TERMS }), {
+  const s = await snapshotAt(SUBSCRIPTION + 40)
+  assert.deepEqual(gate(s, sign(TERMS)), { open: true })
+  const bad = gate(s, sign({ ...TERMS, amountOwed: 900n }))
+  assert.equal(bad.open === false && bad.reason, 'blocked')
+  const late = await snapshotAt(REDEMPTION - 119)
+  assert.deepEqual(gate(late, sign(TERMS)), {
     open: false,
     reason: 'closed',
     code: 'tecNO_PERMISSION',
   })
 })
 
+it('gate keeps installments for loans with more than one payment left', async () => {
+  const s = await snapshotAt(SUBSCRIPTION + 40)
+  const pay = (mode: 'installment' | 'full') =>
+    ({ type: 'ConfidentialLoanPay', loanID: LOAN_1, mode }) as const
+  assert.deepEqual(gate(s, pay('full')), { open: true })
+  assert.deepEqual(gate(s, pay('installment')), {
+    open: false,
+    reason: 'blocked',
+    why: 'Only the final payment is left: pay in full',
+  })
+})
+
 it('gate opens impairment after the due date and default after the grace period', async () => {
   const due = LOAN_START + 60
   const early = await snapshotAt(due)
-  assert.deepEqual(gate(early, { type: 'LoanManage', loan: 'A', flag: 'impair' }), {
+  assert.deepEqual(gate(early, { type: 'LoanManage', loanID: LOAN_1, flag: 'impair' }), {
     open: false,
     reason: 'opens',
     at: toMs(due + 1),
   })
-  assert.deepEqual(gate(early, { type: 'LoanManage', loan: 'A', flag: 'default' }), {
+  assert.deepEqual(gate(early, { type: 'LoanManage', loanID: LOAN_1, flag: 'default' }), {
     open: false,
     reason: 'opens',
     at: toMs(due + 61),
   })
   const late = await snapshotAt(due + 61)
-  assert.deepEqual(gate(late, { type: 'LoanManage', loan: 'A', flag: 'default' }), { open: true })
-  assert.deepEqual(gate(late, { type: 'LoanManage', loan: 'B', flag: 'impair' }), {
+  assert.deepEqual(gate(late, { type: 'LoanManage', loanID: LOAN_1, flag: 'default' }), {
+    open: true,
+  })
+  assert.deepEqual(gate(late, { type: 'LoanManage', loanID: LOAN_2, flag: 'impair' }), {
     open: false,
-    reason: 'prerequisite',
-    step: 4,
+    reason: 'blocked',
+    why: 'No such loan',
   })
 })
 
@@ -791,5 +754,11 @@ it('gate opens redemption at the RedemptionDate', async () => {
   const redeeming = await snapshotAt(REDEMPTION)
   assert.deepEqual(gate(redeeming, { type: 'VaultWithdraw', depositor: 'depositorA' }), {
     open: true,
+  })
+  const empty = await snapshotAt(REDEMPTION, undeposited)
+  assert.deepEqual(gate(empty, { type: 'VaultWithdraw', depositor: 'depositorA' }), {
+    open: false,
+    reason: 'blocked',
+    why: 'No shares to redeem',
   })
 })

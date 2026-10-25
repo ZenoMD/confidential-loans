@@ -1,4 +1,4 @@
-import type { ConfidentialKeypair, LedgerEntry, TransactionMetadata } from 'xrpl'
+import type { ConfidentialKeypair, LedgerEntry } from 'xrpl'
 
 import type { Amount, AmountDisplay, Shown } from './amount.ts'
 import type { Offer } from './demo-actions.ts'
@@ -8,28 +8,21 @@ import type {
   ConfidentialBalance,
   Depositor,
   DepositorView,
-  LoanLabel,
   LoanOffer,
   LoanView,
   Phase,
   Public,
-  Signer,
   Snapshot,
-  Step,
   Time,
-  TransactionType,
-  TxRecord,
   Viewer,
 } from './demo-ledger.ts'
-import type { LedgerState, LoggedTx } from './demo-state.ts'
+import type { LedgerState } from './demo-state.ts'
 import type { Kit } from './kit.ts'
-import { txLink } from './network.ts'
 
 /** What the demo holds between ledger reads. */
 export interface ViewInputs {
   readonly state: LedgerState
-  readonly log: readonly LoggedTx[]
-  readonly offers: ReadonlyMap<LoanLabel, Offer>
+  readonly offer: Offer | undefined
   readonly submitting: Action | undefined
   readonly errors: readonly string[]
   readonly kit: Kit
@@ -39,22 +32,7 @@ export interface ViewInputs {
 const RIPPLE_EPOCH_MS = 946_684_800_000
 const LSF_LOAN_DEFAULT = 0x0001_0000
 const LSF_LOAN_IMPAIRED = 0x0002_0000
-const TF_LOAN_DEFAULT = 0x0001_0000
-const TF_LOAN_IMPAIR = 0x0002_0000
 const REDACTED: Shown = Object.freeze({ visibility: 'redacted' })
-
-const DEMO_TYPES = new Set<string>([
-  'LoanBrokerSet',
-  'VaultDeposit',
-  'LoanBrokerDraw',
-  'LoanBrokerMergeInbox',
-  'LoanSet',
-  'ConfidentialMPTMergeInbox',
-  'ConfidentialLoanPay',
-  'LoanBrokerSettle',
-  'LoanManage',
-  'VaultWithdraw',
-])
 
 /** Converts Ripple Epoch seconds to Unix milliseconds. */
 export function rippleTime(seconds: number): Time {
@@ -103,16 +81,12 @@ function lens(view: ViewInputs, keys: readonly ConfidentialKeypair[]): Lens {
 
 interface Keys {
   readonly broker: string | undefined
-  readonly issuer: string | undefined
-  readonly auditor: string | undefined
   borrower(borrower: Borrower): string | undefined
 }
 
 function publicKeys(state: LedgerState): Keys {
   return {
     broker: state.broker?.lendingBalance?.HolderEncryptionKey,
-    issuer: state.issuance.IssuerEncryptionKey,
-    auditor: state.issuance.AuditorEncryptionKey,
     borrower: (borrower) => state.assetTokens[borrower]?.HolderEncryptionKey,
   }
 }
@@ -141,7 +115,7 @@ function loanView(
   lens: Lens,
   keys: Keys,
   borrower: Borrower,
-  loan: LedgerEntry.Loan & { index: string },
+  loan: LedgerState['loans'][number],
 ): LoanView {
   const holders = [keys.borrower(borrower), keys.broker, loan.LoanAuditorEncryptionKey] as const
   const term = (ciphertexts: readonly [unknown, unknown, unknown]): Shown =>
@@ -149,6 +123,7 @@ function loanView(
   const due = loan.NextPaymentDueDate ?? 0
   return {
     loanID: loan.index,
+    loanSequence: loan.LoanSequence,
     borrower,
     principal: term([
       loan.BorrowerEncryptedPrincipal,
@@ -174,214 +149,29 @@ function loanView(
   }
 }
 
-/** Facts about the run that decide which logged transactions belong to it. */
-interface Run {
-  readonly kit: Kit
-  readonly roleOf: ReadonlyMap<string, Signer>
-  readonly loanBrokerID: string | undefined
-  readonly loanOf: ReadonlyMap<string, LoanLabel>
-  readonly brokerCreatedIn: number
-  loanAuditorKey(loanID: string): string | undefined
+function depositorView(state: LedgerState, who: Depositor): DepositorView {
+  const shares = BigInt(state.shareTokens[who]?.MPTAmount ?? '0')
+  const sharesTotal = BigInt(state.shareIssuance.OutstandingAmount ?? '0')
+  const { AssetsTotal, LossUnrealized } = state.vault
+  const assets = BigInt(AssetsTotal ?? '0') - BigInt(LossUnrealized ?? '0')
+  return {
+    wallet: pub(state.assetTokens[who]?.MPTAmount),
+    shares,
+    value: pub(sharesTotal === 0n ? 0n : (shares * assets) / sharesTotal),
+  }
 }
 
-function borrowerLoan(role: Signer | undefined): LoanLabel | undefined {
-  if (role === 'borrowerA') return 'A'
-  if (role === 'borrowerB') return 'B'
+function offerView(state: LedgerState, offer: Offer | undefined): LoanOffer | undefined {
+  if (offer === undefined) return undefined
+  const { borrower, terms, signedAt } = offer
+  const stale = state.brokerSequence !== offer.sequence || state.ledgerIndex >= offer.lastLedger
+  return { borrower, terms, signedAt, stale }
+}
+
+function borrowerOf(kit: Kit, address: string): Borrower | undefined {
+  if (address === kit.accounts.borrowerA.address) return 'borrowerA'
+  if (address === kit.accounts.borrowerB.address) return 'borrowerB'
   return undefined
-}
-
-function belongs(run: Run, { tx, ledgerIndex }: LoggedTx): boolean {
-  if (!DEMO_TYPES.has(tx.TransactionType)) return false
-  if (tx['VaultID'] === run.kit.vaultID) return true
-  if (run.loanBrokerID !== undefined && tx['LoanBrokerID'] === run.loanBrokerID) return true
-  if (typeof tx['LoanID'] === 'string' && run.loanOf.has(tx['LoanID'])) return true
-  return (
-    tx.TransactionType === 'ConfidentialMPTMergeInbox' &&
-    tx['MPTokenIssuanceID'] === run.kit.mptIssuanceID &&
-    borrowerLoan(run.roleOf.get(String(tx['Account']))) !== undefined &&
-    run.loanBrokerID !== undefined &&
-    ledgerIndex >= run.brokerCreatedIn
-  )
-}
-
-function createdIn(log: readonly LoggedTx[], kit: Kit): number {
-  const created = log.find(
-    ({ tx, meta }) =>
-      tx.TransactionType === 'LoanBrokerSet' &&
-      tx['VaultID'] === kit.vaultID &&
-      meta.TransactionResult === 'tesSUCCESS',
-  )
-  return created?.ledgerIndex ?? 0
-}
-
-function runOf(view: ViewInputs): Run {
-  const { kit, state } = view
-  const roleOf = new Map<string, Signer>()
-  for (const [role, { address }] of Object.entries(kit.accounts)) {
-    roleOf.set(address, role as Signer)
-  }
-  const loanOf = new Map<string, LoanLabel>()
-  for (const [label, loan] of Object.entries(state.loans))
-    loanOf.set(loan.index, label as LoanLabel)
-  return {
-    kit,
-    roleOf,
-    loanBrokerID: state.broker?.entry.index,
-    loanOf,
-    brokerCreatedIn: createdIn(view.log, kit),
-    loanAuditorKey: (loanID) =>
-      Object.values(state.loans).find((loan) => loan.index === loanID)?.LoanAuditorEncryptionKey,
-  }
-}
-
-/**
- * The assets a withdrawal took out of the vault. The depositor's MPToken cannot tell: rippled omits
- * `MPTAmount` at 0, so a wallet the deposit emptied has no previous amount in the metadata.
- */
-function payout(meta: TransactionMetadata, vaultID: string): bigint {
-  for (const node of meta.AffectedNodes) {
-    if (!('ModifiedNode' in node)) continue
-    const { LedgerEntryType, LedgerIndex, FinalFields, PreviousFields } = node.ModifiedNode
-    if (LedgerEntryType !== 'Vault' || LedgerIndex !== vaultID) continue
-    const before = PreviousFields?.['AssetsTotal']
-    if (before === undefined) return 0n
-    return BigInt(String(before)) - BigInt(String(FinalFields?.['AssetsTotal'] ?? 0))
-  }
-  return 0n
-}
-
-function stepOf(type: TransactionType, paid: boolean): Step {
-  const steps: Record<TransactionType, Step> = {
-    LoanBrokerSet: 1,
-    VaultDeposit: 2,
-    LoanBrokerDraw: 3,
-    LoanBrokerMergeInbox: paid ? 7 : 3,
-    LoanSet: 4,
-    ConfidentialMPTMergeInbox: 6,
-    ConfidentialLoanPay: 6,
-    LoanBrokerSettle: 7,
-    LoanManage: 8,
-    VaultWithdraw: 10,
-  }
-  return steps[type]
-}
-
-function recordAmount(lens: Lens, keys: Keys, run: Run, logged: LoggedTx): Shown | undefined {
-  const { tx, meta } = logged
-  const borrower = (field: string): Borrower | undefined => {
-    const role = run.roleOf.get(String(tx[field]))
-    return borrowerLoan(role) === undefined ? undefined : (role as Borrower)
-  }
-  const value = (tx['Amount'] as { value?: string } | undefined)?.value
-  switch (tx.TransactionType) {
-    case 'VaultDeposit':
-    case 'LoanBrokerDraw':
-    case 'LoanBrokerSettle':
-      return pub(value)
-    case 'VaultWithdraw': {
-      if (meta.TransactionResult !== 'tesSUCCESS') return undefined
-      return pub(payout(meta, run.kit.vaultID))
-    }
-    case 'LoanSet': {
-      const to = borrower('Counterparty')
-      return lens.encrypted([
-        [keys.broker, tx['SenderEncryptedAmount']],
-        [to === undefined ? undefined : keys.borrower(to), tx['DestinationEncryptedAmount']],
-        [keys.issuer, tx['IssuerEncryptedAmount']],
-        [keys.auditor, tx['AuditorEncryptedAmount']],
-        [tx['LoanAuditorEncryptionKey'] as string | undefined, tx['LoanAuditorEncryptedPrincipal']],
-      ])
-    }
-    case 'ConfidentialLoanPay': {
-      const from = borrower('Account')
-      return lens.encrypted([
-        [from === undefined ? undefined : keys.borrower(from), tx['SenderEncryptedAmount']],
-        [keys.broker, tx['DestinationEncryptedAmount']],
-        [keys.issuer, tx['IssuerEncryptedAmount']],
-        [keys.auditor, tx['AuditorEncryptedAmount']],
-        [run.loanAuditorKey(String(tx['LoanID'])), tx['LoanAuditorEncryptedAmount']],
-      ])
-    }
-    default:
-      return undefined
-  }
-}
-
-function recordLoan(run: Run, { tx }: LoggedTx): LoanLabel | undefined {
-  switch (tx.TransactionType) {
-    case 'LoanSet':
-      return borrowerLoan(run.roleOf.get(String(tx['Counterparty'])))
-    case 'ConfidentialMPTMergeInbox':
-      return borrowerLoan(run.roleOf.get(String(tx['Account'])))
-    case 'ConfidentialLoanPay':
-    case 'LoanManage':
-      return run.loanOf.get(String(tx['LoanID']))
-    default:
-      return undefined
-  }
-}
-
-function recordFlag({ tx }: LoggedTx): TxRecord['flag'] {
-  if (tx.TransactionType !== 'LoanManage') return undefined
-  const flags = Number(tx['Flags'] ?? 0)
-  if ((flags & TF_LOAN_DEFAULT) !== 0) return 'Defaulted'
-  return (flags & TF_LOAN_IMPAIR) !== 0 ? 'Impaired' : undefined
-}
-
-function records(view: ViewInputs, lens: Lens, keys: Keys): TxRecord[] {
-  const run = runOf(view)
-  const result: TxRecord[] = []
-  let paid = false
-  for (const logged of view.log) {
-    if (!belongs(run, logged)) continue
-    const { tx, meta, hash } = logged
-    const type = tx.TransactionType as TransactionType
-    const signers: Signer[] = []
-    for (const field of ['Account', ...(type === 'LoanSet' ? ['Counterparty'] : [])]) {
-      const role = run.roleOf.get(String(tx[field]))
-      if (role !== undefined) signers.push(role)
-    }
-    result.push({
-      hash,
-      explorerUrl: txLink(hash),
-      step: stepOf(type, paid),
-      type,
-      loan: recordLoan(run, logged),
-      signers,
-      result: meta.TransactionResult,
-      closedAt: rippleTime(logged.closeTime),
-      amount: recordAmount(lens, keys, run, logged),
-      flag: recordFlag(logged),
-    })
-    if (type === 'ConfidentialLoanPay' && meta.TransactionResult === 'tesSUCCESS') paid = true
-  }
-  return result
-}
-
-function sum(values: readonly bigint[]): Public | undefined {
-  return values.length === 0 ? undefined : pub(values.reduce((a, b) => a + b, 0n))
-}
-
-function depositorView(view: ViewInputs, log: readonly TxRecord[], who: Depositor): DepositorView {
-  const mine = log.filter((r) => r.signers[0] === who)
-  const values = (type: TransactionType): bigint[] =>
-    mine
-      .filter((r) => r.type === type && r.result === 'tesSUCCESS' && r.amount !== undefined)
-      .map((r) => (r.amount?.visibility === 'public' ? r.amount.value : 0n))
-  const last = mine.findLast((r) => r.type === 'VaultWithdraw')
-  return {
-    wallet: pub(view.state.assetTokens[who]?.MPTAmount),
-    shares: BigInt(view.state.shareTokens[who]?.MPTAmount ?? '0'),
-    deposited: sum(values('VaultDeposit')),
-    redeemed: sum(values('VaultWithdraw')),
-    redeemFailure: last === undefined || last.result === 'tesSUCCESS' ? undefined : last.result,
-  }
-}
-
-function offersOf(offers: ReadonlyMap<LoanLabel, Offer>): Snapshot['offers'] {
-  const shown: Partial<Record<LoanLabel, LoanOffer>> = {}
-  for (const { loan, terms, signedAt } of offers.values()) shown[loan] = { loan, terms, signedAt }
-  return shown
 }
 
 /**
@@ -398,14 +188,14 @@ export function buildSnapshot(
   viewer: Viewer,
   keys: readonly ConfidentialKeypair[],
 ): Snapshot {
-  const { state } = view
+  const { state, kit } = view
   const l = lens(view, keys)
   const k = publicKeys(state)
-  const log = records(view, l, k)
-  const loans: Partial<Record<LoanLabel, LoanView>> = {}
-  const { A, B } = state.loans
-  if (A !== undefined) loans.A = loanView(l, k, 'borrowerA', A)
-  if (B !== undefined) loans.B = loanView(l, k, 'borrowerB', B)
+  const loans: LoanView[] = []
+  for (const loan of state.loans) {
+    const borrower = borrowerOf(kit, loan.Borrower)
+    if (borrower !== undefined) loans.push(loanView(l, k, borrower, loan))
+  }
   const { vault, broker } = state
   return {
     viewer,
@@ -413,7 +203,7 @@ export function buildSnapshot(
     now: rippleTime(state.closeTime),
     phase: phaseAt(state.closeTime, vault),
     vault: {
-      vaultID: view.kit.vaultID,
+      vaultID: kit.vaultID,
       assetsTotal: pub(vault.AssetsTotal),
       assetsAvailable: pub(vault.AssetsAvailable),
       lossUnrealized: pub(vault.LossUnrealized),
@@ -431,16 +221,15 @@ export function buildSnapshot(
             lendingBalance: confidential(l, broker.lendingBalance, k.broker),
           },
     loans,
-    offers: offersOf(view.offers),
+    offer: offerView(state, view.offer),
     depositors: {
-      depositorA: depositorView(view, log, 'depositorA'),
-      depositorB: depositorView(view, log, 'depositorB'),
+      depositorA: depositorView(state, 'depositorA'),
+      depositorB: depositorView(state, 'depositorB'),
     },
     borrowers: {
       borrowerA: confidential(l, state.assetTokens.borrowerA, k.borrower('borrowerA')),
       borrowerB: confidential(l, state.assetTokens.borrowerB, k.borrower('borrowerB')),
     },
-    log,
     submitting: view.submitting,
     errors: [...view.errors, ...l.errors],
   }

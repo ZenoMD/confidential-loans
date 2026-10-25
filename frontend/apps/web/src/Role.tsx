@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import './Role.css'
-import type { RoleKind } from './stepNav.ts'
+
+export type RoleKind = 'broker' | 'depositor' | 'borrower'
 
 const ICON_PATHS: Readonly<Record<RoleKind, ReactNode>> = {
   broker: (
@@ -24,12 +25,6 @@ const ICON_PATHS: Readonly<Record<RoleKind, ReactNode>> = {
       <circle cx="17" cy="28" r="3" />
       <circle cx="24" cy="28" r="3" />
       <circle cx="31" cy="28" r="3" />
-    </>
-  ),
-  explorer: (
-    <>
-      <circle cx="21" cy="21" r="12" />
-      <path d="M30 30l11 11" />
     </>
   ),
 }

@@ -43,14 +43,14 @@ ledger IDs in `frontend/scripts/state.json`; git ignores both.
 | `node scripts/create-vault.ts` | Creates the run's closed-ended vault (300 s Subscription, 600 s Investment by default) unless the saved one still takes deposits; `--help` lists the options |
 | `node scripts/export-kit.ts` | Prints the kit, the JSON the app needs to play every role: addresses, seeds and ledger IDs. The dev and preview servers run it to serve the app |
 
-Step 1 of the app creates the confidential LoanBroker, so no script does. The seeds live in the
+The Broker tab creates the confidential LoanBroker, so no script does. The seeds live in the
 gitignored `scripts/.env`. The dev and preview servers serve the kit at `/demo-kit` and the app
 loads it on start, so the built bundle holds no seed. Never commit the kit or put it in a
 `VITE_*` variable or a URL.
 
 ## Run the demo
 
-Run from `frontend/` with Node 22. Steps 1 to 8 need a fresh vault that is still taking deposits.
+Run from `frontend/` with Node 22. A run needs a fresh vault that is still taking deposits.
 Setup creates the vault last, so its 300 s deposit window opens once the rest of setup is done.
 
 ```sh
@@ -59,7 +59,8 @@ node scripts/setup.ts
 pnpm build && pnpm --filter web exec vite preview
 ```
 
-Open the URL Vite prints: it starts at step 1, and the step bar moves through to step 10. Use
+Open the URL Vite prints. The app has a tab per actor: Depositor, Broker and Borrower, each with
+its own state and actions, and a picker between the two depositors or borrowers. Use
 the production build: under `pnpm dev` the crypto WASM fails to load.
 
 The defaults (300 s Subscription, 600 s Investment) suit a demo at human pace. For a quick run,

@@ -1,11 +1,15 @@
 import type { Action, Gate, Time } from '@confidential-loans/core/demo-ledger'
-import { stepHref } from './route.ts'
 
-/** The one line under a CTA: a failure, a gate note, or a link to the missing step. */
+/** The one line under a CTA: a failure, or why the gate is shut. */
 export type CtaLine =
   | { readonly kind: 'alert'; readonly text: string }
   | { readonly kind: 'note'; readonly text: string }
-  | { readonly kind: 'link'; readonly text: string; readonly href: string }
+
+/** An action and the label of the button that runs it, as `<Cta>` takes them. */
+export interface Command {
+  readonly action: Action
+  readonly label: string
+}
 
 export interface CtaView {
   readonly text: string
@@ -26,7 +30,7 @@ export interface CtaInput {
 
 /**
  * A stable identity for an action, so a CTA recognizes its own action in `Snapshot.submitting`
- * and its own failure after the screen re-renders with a new object.
+ * and its own failure after the tab re-renders with a new object.
  */
 export function actionKey(action: Action): string {
   return JSON.stringify(action, (_, value: unknown) =>
@@ -56,8 +60,8 @@ function gateLine(gate: Gate): CtaLine | undefined {
       return { kind: 'note', text: `Opens at ${formatClock(gate.at)}` }
     case 'closed':
       return { kind: 'note', text: gate.code }
-    case 'prerequisite':
-      return { kind: 'link', text: `Complete step ${gate.step} first`, href: stepHref(gate.step) }
+    case 'blocked':
+      return { kind: 'note', text: gate.why }
     case 'done':
       return undefined
   }

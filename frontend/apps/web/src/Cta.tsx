@@ -7,9 +7,9 @@ import { useDemo, useSnapshot } from './ledger.tsx'
 
 /**
  * The primary button that runs one demo action, with its pending, failed, gated and
- * missing-prerequisite states. Screens submit only through it.
+ * blocked states. Tabs submit only through it.
  */
-export function Cta({ action, label }: { action: Action; label: string }) {
+export function Cta({ action, label, small }: { action: Action; label: string; small?: boolean }) {
   const demo = useDemo()
   const snapshot = useSnapshot('outsider')
   const [failure, setFailure] = useState<{ key: string; text: string }>()
@@ -37,7 +37,7 @@ export function Cta({ action, label }: { action: Action; label: string }) {
 
   const { line } = view
   return (
-    <div className="cta">
+    <div className="cta" data-size={small === true ? 'small' : undefined}>
       <button type="button" className="cta-button" disabled={view.disabled} onClick={run}>
         {view.text}
       </button>
@@ -47,11 +47,6 @@ export function Cta({ action, label }: { action: Action; label: string }) {
         </p>
       )}
       {line?.kind === 'note' && <p className="cta-line">{line.text}</p>}
-      {line?.kind === 'link' && (
-        <p className="cta-line">
-          <a href={line.href}>{line.text}</a>
-        </p>
-      )}
     </div>
   )
 }

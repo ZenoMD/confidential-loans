@@ -2,10 +2,11 @@ import { createAmountDisplay } from './amount.ts'
 import type { Shown } from './amount.ts'
 import { decryptCiphertext } from './confidential.ts'
 import { ActionFailed, createActions } from './demo-actions.ts'
-import type { Offer } from './demo-actions.ts'
-import { readLedgerState, TxLog } from './demo-state.ts'
+import type { OfferSlot } from './demo-actions.ts'
+import { readLedgerState } from './demo-state.ts'
 import type { LedgerState } from './demo-state.ts'
 import { buildSnapshot } from './demo-view.ts'
+import { validateLoanTerms } from './demo.ts'
 import type { LoanTerms } from './demo.ts'
 import type { Kit } from './kit.ts'
 import type { Ledger } from './network.ts'
@@ -15,24 +16,18 @@ export type { Kit, LoanTerms, Shown }
 
 export type Depositor = 'depositorA' | 'depositorB'
 export type Borrower = 'borrowerA' | 'borrowerB'
-export type LoanLabel = 'A' | 'B'
 /** The accounts that sign demo transactions. */
 export type Signer = 'brokerA' | Depositor | Borrower
 /** The holders of an ElGamal private key in the kit. */
 export type KeyHolder = 'brokerA' | Borrower | 'mptAuditor' | 'loanAuditor'
-/**
- * Whose eyes a snapshot is rendered through. `auditor` holds both the MPT Auditor key and the Loan
- * Auditor key; `outsider` and the depositors hold none.
- */
-export type Viewer = 'outsider' | 'auditor' | Signer
+/** Whose eyes a snapshot is rendered through. `outsider` and the depositors hold no key. */
+export type Viewer = 'outsider' | Signer
 /** The closed-ended vault's phase, decided by the latest validated ledger's close time. */
 export type Phase = 'subscription' | 'investment' | 'redemption'
-/** The demo screens that submit transactions. */
-export type Step = 1 | 2 | 3 | 4 | 6 | 7 | 8 | 10
 /** A moment in Unix milliseconds, ready for `new Date(time)`. */
 export type Time = number
 
-/** The agreed terms of both demo loans: one full payment 60 s after the start, 60 s grace. */
+/** The terms the loan form prefills: one full payment 60 s after the start, 60 s grace. */
 export const DEMO_TERMS: LoanTerms = Object.freeze({
   principal: 100_000n,
   amountOwed: 105_000n,
@@ -42,7 +37,7 @@ export const DEMO_TERMS: LoanTerms = Object.freeze({
   gracePeriod: 60,
 })
 
-/** The agreed amounts the screens prefill. */
+/** The amounts the forms prefill. */
 export const DEMO_AMOUNTS = Object.freeze({
   debtMaximum: 250_000n,
   deposit: 150_000n,
@@ -52,7 +47,7 @@ export const DEMO_AMOUNTS = Object.freeze({
 /** An amount everyone can read. Assignable to `Shown`. */
 export type Public = { readonly visibility: 'public'; readonly value: bigint }
 
-/** A step the demo can take. Each submits one transaction, except `LoanSetSign`. */
+/** Something the demo can do. Each submits one transaction, except the offer sign and withdraw. */
 export type Action =
   /** Creates the confidential LoanBroker for the kit's vault. 0 means no debt cap. */
   | { readonly type: 'LoanBrokerSet'; readonly debtMaximum: bigint }
@@ -62,55 +57,33 @@ export type Action =
   /** Moves the Lending Balance inbox into its spending balance. */
   | { readonly type: 'LoanBrokerMergeInbox' }
   /**
-   * The Broker builds the proof and signs the loan's `LoanSet`. Nothing is submitted: the offer
-   * waits in memory, in `Snapshot.offers`, for the borrower. A reload loses it.
+   * The Broker builds the proof and signs a `LoanSet` to `borrower`. Nothing is submitted: the
+   * offer waits in memory, in `Snapshot.offer`, for the borrower. A reload loses it.
    */
-  | { readonly type: 'LoanSetSign'; readonly loan: LoanLabel; readonly terms: LoanTerms }
+  | { readonly type: 'LoanSetSign'; readonly borrower: Borrower; readonly terms: LoanTerms }
   /** The borrower co-signs the held offer and submits it. */
-  | { readonly type: 'LoanSetCosign'; readonly loan: LoanLabel }
+  | { readonly type: 'LoanSetCosign'; readonly borrower: Borrower }
+  /** The Broker drops the held offer. Nothing is submitted. */
+  | { readonly type: 'LoanSetWithdraw' }
   | { readonly type: 'ConfidentialMPTMergeInbox'; readonly borrower: Borrower }
-  /** Pays the loan in full: exactly the amount owed, decrypted with the borrower's key. */
-  | { readonly type: 'ConfidentialLoanPay'; readonly loan: LoanLabel }
+  /**
+   * Pays a loan from the borrower's spending balance: the periodic payment, or exactly the amount
+   * owed, both decrypted with the borrower's key.
+   */
+  | {
+      readonly type: 'ConfidentialLoanPay'
+      readonly loanID: string
+      readonly mode: 'installment' | 'full'
+    }
   /** Settles the whole Lending Balance spending to the vault. */
   | { readonly type: 'LoanBrokerSettle' }
-  | { readonly type: 'LoanManage'; readonly loan: LoanLabel; readonly flag: 'impair' | 'default' }
+  | {
+      readonly type: 'LoanManage'
+      readonly loanID: string
+      readonly flag: 'impair' | 'default'
+    }
   /** Redeems all of the depositor's shares. */
   | { readonly type: 'VaultWithdraw'; readonly depositor: Depositor }
-
-/** The transaction types the demo submits. */
-export type TransactionType =
-  | 'LoanBrokerSet'
-  | 'VaultDeposit'
-  | 'LoanBrokerDraw'
-  | 'LoanBrokerMergeInbox'
-  | 'LoanSet'
-  | 'ConfidentialMPTMergeInbox'
-  | 'ConfidentialLoanPay'
-  | 'LoanBrokerSettle'
-  | 'LoanManage'
-  | 'VaultWithdraw'
-
-/** One validated demo transaction, as the explorers list it. Failed ones are kept too. */
-export interface TxRecord {
-  readonly hash: string
-  readonly explorerUrl: string
-  readonly step: Step
-  readonly type: TransactionType
-  /** The loan it concerns, for LoanSet, borrower merges, payments and LoanManage. */
-  readonly loan: LoanLabel | undefined
-  /** The submitter first; a LoanSet adds its co-signing borrower. */
-  readonly signers: readonly Signer[]
-  /** `tesSUCCESS`, or the `tec` code the ledger recorded. */
-  readonly result: string
-  readonly closedAt: Time
-  /**
-   * Public for a deposit, draw, settle and redemption payout; encrypted for a LoanSet principal
-   * and a ConfidentialLoanPay. Undefined for merges, LoanBrokerSet and LoanManage.
-   */
-  readonly amount: Shown | undefined
-  /** The LoanManage flag set. */
-  readonly flag: 'Impaired' | 'Defaulted' | undefined
-}
 
 export interface ConfidentialBalance {
   readonly spending: Shown
@@ -128,6 +101,8 @@ export interface BrokerView {
 
 export interface LoanView {
   readonly loanID: string
+  /** Counts the LoanBroker's loans from 1. */
+  readonly loanSequence: number
   readonly borrower: Borrower
   readonly principal: Shown
   /** Reduced by each payment. */
@@ -146,24 +121,25 @@ export interface LoanView {
 
 /** A LoanSet the Broker signed, waiting for the borrower's co-signature. */
 export interface LoanOffer {
-  readonly loan: LoanLabel
+  readonly borrower: Borrower
   readonly terms: LoanTerms
   readonly signedAt: Time
+  /**
+   * The Broker has submitted another transaction since signing, or the offer's last ledger has
+   * passed: the ledger would reject it.
+   */
+  readonly stale: boolean
 }
 
 export interface DepositorView {
   /** Public balance of the vault asset. */
   readonly wallet: Public
   readonly shares: bigint
-  /** Sum of the depositor's successful deposits; undefined before the first. */
-  readonly deposited: Public | undefined
-  /** Sum of the depositor's redemption payouts; undefined before the first. */
-  readonly redeemed: Public | undefined
-  /** The code of a failed redemption not followed by a successful one. */
-  readonly redeemFailure: string | undefined
+  /** What the shares redeem for now: their part of `AssetsTotal` less `LossUnrealized`. */
+  readonly value: Public
 }
 
-/** Everything screens 1 to 10 render, read from one validated ledger and seen by one viewer. */
+/** Everything the tabs render, read from one validated ledger and seen by one viewer. */
 export interface Snapshot {
   readonly viewer: Viewer
   readonly ledgerIndex: number
@@ -181,14 +157,13 @@ export interface Snapshot {
     /** Withdrawals open at this moment. */
     readonly redemptionDate: Time
   }
-  /** Undefined until step 1 creates it. */
+  /** Undefined until the Broker creates it. */
   readonly broker: BrokerView | undefined
-  readonly loans: Readonly<Partial<Record<LoanLabel, LoanView>>>
-  readonly offers: Readonly<Partial<Record<LoanLabel, LoanOffer>>>
+  /** The LoanBroker's loans, oldest first. */
+  readonly loans: readonly LoanView[]
+  readonly offer: LoanOffer | undefined
   readonly depositors: Readonly<Record<Depositor, DepositorView>>
   readonly borrowers: Readonly<Record<Borrower, ConfidentialBalance>>
-  /** Demo transactions in ledger order. */
-  readonly log: readonly TxRecord[]
   /** The action in flight, if any. Only one runs at a time. */
   readonly submitting: Action | undefined
   /** Problems to show: a failed refresh, or an amount that failed to decrypt (shown redacted). */
@@ -198,17 +173,12 @@ export interface Snapshot {
 /** Whether an action can run now, and if not, why. */
 export type Gate =
   | { readonly open: true }
-  /** Opens by ledger time: the screens show "Opens at HH:MM:SS". */
+  /** Opens by ledger time: the tabs show "Opens at HH:MM:SS". */
   | { readonly open: false; readonly reason: 'opens'; readonly at: Time }
   /** The ledger would reject it with `code`. */
   | { readonly open: false; readonly reason: 'closed'; readonly code: string }
-  /** An earlier step must run first: "Complete step N first". `loan` names the missing loan. */
-  | {
-      readonly open: false
-      readonly reason: 'prerequisite'
-      readonly step: Step
-      readonly loan?: LoanLabel
-    }
+  /** Something else must happen first; `why` says what, as a sentence. */
+  | { readonly open: false; readonly reason: 'blocked'; readonly why: string }
   | { readonly open: false; readonly reason: 'done' }
 
 /** The running demo on the devnet. */
@@ -244,22 +214,15 @@ function opens(at: Time): Gate {
 function closed(code: string): Gate {
   return { open: false, reason: 'closed', code }
 }
-function prerequisite(step: Step, loan?: LoanLabel): Gate {
-  return loan === undefined
-    ? { open: false, reason: 'prerequisite', step }
-    : { open: false, reason: 'prerequisite', step, loan }
+function blocked(why: string): Gate {
+  return { open: false, reason: 'blocked', why }
 }
 const DONE: Gate = Object.freeze({ open: false, reason: 'done' })
+const NO_BROKER = 'Create the LoanBroker first'
 
 const SECOND = 1000
 /** XLS-66 closed-ended gate: the final payment must precede RedemptionDate by this much. */
 const LOAN_REDEMPTION_BUFFER_MS = 60 * SECOND
-
-function succeeded(s: Snapshot, type: TransactionType, step?: Step): boolean {
-  return s.log.some(
-    (r) => r.type === type && r.result === 'tesSUCCESS' && (step === undefined || r.step === step),
-  )
-}
 
 function amountGate(amount: bigint, limit: bigint): Gate | undefined {
   if (amount <= 0n) return closed('temBAD_AMOUNT')
@@ -268,7 +231,7 @@ function amountGate(amount: bigint, limit: bigint): Gate | undefined {
 }
 
 function drawGate(s: Snapshot, amount: bigint): Gate {
-  if (s.broker === undefined) return prerequisite(1)
+  if (s.broker === undefined) return blocked(NO_BROKER)
   if (s.phase === 'subscription') return opens(s.vault.subscriptionDate + SECOND)
   if (s.phase === 'redemption') return closed('tecNO_PERMISSION')
   const tooMuch = amountGate(amount, s.vault.assetsAvailable.value)
@@ -280,16 +243,43 @@ function drawGate(s: Snapshot, amount: bigint): Gate {
   return open()
 }
 
-function loanSetGate(s: Snapshot, loan: LoanLabel, terms: LoanTerms): Gate {
-  if (s.broker === undefined) return prerequisite(1)
-  if (s.loans[loan] !== undefined) return DONE
-  if (!succeeded(s, 'LoanBrokerMergeInbox', 3)) return prerequisite(3)
-  if (loan === 'B' && s.loans.A === undefined) return prerequisite(4, 'A')
+/** The ledger's phase and schedule rules for a LoanSet with `terms` submitted now. */
+function termsGate(s: Snapshot, terms: LoanTerms): Gate {
+  try {
+    validateLoanTerms(terms)
+  } catch (error) {
+    return blocked(error instanceof Error ? error.message : String(error))
+  }
   if (s.phase === 'subscription') return opens(s.vault.subscriptionDate + SECOND)
   if (s.phase === 'redemption') return closed('tecEXPIRED')
   const finalPayment = s.now + terms.paymentInterval * terms.paymentTotal * SECOND
   if (finalPayment + LOAN_REDEMPTION_BUFFER_MS > s.vault.redemptionDate) {
     return closed('tecNO_PERMISSION')
+  }
+  return open()
+}
+
+function signGate(s: Snapshot, terms: LoanTerms): Gate {
+  if (s.broker === undefined) return blocked(NO_BROKER)
+  if (s.offer !== undefined && !s.offer.stale) {
+    return blocked('An offer is waiting for its co-signature')
+  }
+  if (s.broker.debtTotal.value === 0n) return blocked('Draw into the Lending Balance first')
+  return termsGate(s, terms)
+}
+
+function cosignGate(s: Snapshot, borrower: Borrower): Gate {
+  const { offer } = s
+  if (offer === undefined || offer.borrower !== borrower) return blocked('No offer to co-sign')
+  if (offer.stale) return blocked('The offer expired: the Broker must sign it again')
+  return termsGate(s, offer.terms)
+}
+
+function payGate(loan: LoanView, mode: 'installment' | 'full'): Gate {
+  if (loan.status === 'repaid') return DONE
+  if (loan.status === 'defaulted') return closed('tecNO_PERMISSION')
+  if (mode === 'installment' && loan.paymentRemaining <= 1) {
+    return blocked('Only the final payment is left: pay in full')
   }
   return open()
 }
@@ -303,24 +293,27 @@ function manageGate(s: Snapshot, loan: LoanView, flag: 'impair' | 'default'): Ga
   return s.now > boundary ? open() : opens(boundary + SECOND)
 }
 
-/** Done once the depositor's whole wallet is in the vault; tecEXPIRED and amount checks follow. */
 function depositGate(s: Snapshot, depositor: Depositor, amount: bigint): Gate {
-  const { wallet, shares } = s.depositors[depositor]
-  if (shares > 0n && wallet.value === 0n) return DONE
+  const { wallet } = s.depositors[depositor]
   if (s.phase !== 'subscription') return closed('tecEXPIRED')
+  if (wallet.value === 0n) return blocked('The wallet is empty')
   return amountGate(amount, wallet.value) ?? open()
 }
 
 function withdrawGate(s: Snapshot, depositor: Depositor): Gate {
-  const { shares, deposited } = s.depositors[depositor]
-  if (shares === 0n) return deposited === undefined ? prerequisite(2) : DONE
+  if (s.depositors[depositor].shares === 0n) return blocked('No shares to redeem')
   if (s.phase === 'investment') return opens(s.vault.redemptionDate)
   return open()
 }
 
+function loanGate(s: Snapshot, loanID: string, check: (loan: LoanView) => Gate): Gate {
+  const loan = s.loans.find((l) => l.loanID === loanID)
+  return loan === undefined ? blocked('No such loan') : check(loan)
+}
+
 /**
  * Decides from a snapshot whether an action can run, with the ledger's own phase, time and limit
- * rules (rippled `getVaultPhase`, `LoanSet`, `LoanBrokerDraw`, `LoanManage`). The screens enable
+ * rules (rippled `getVaultPhase`, `LoanSet`, `LoanBrokerDraw`, `LoanManage`). The tabs enable
  * buttons from it. It does not check what only a decrypt could tell, such as whether a balance
  * covers a payment: the builder checks that, and `act` rejects with `buildFailed`.
  *
@@ -337,31 +330,20 @@ export function gate(s: Snapshot, action: Action): Gate {
     case 'LoanBrokerDraw':
       return drawGate(s, action.amount)
     case 'LoanBrokerMergeInbox':
-      return s.broker === undefined ? prerequisite(1) : open()
-    case 'LoanSetSign':
-      return loanSetGate(s, action.loan, action.terms)
-    case 'LoanSetCosign': {
-      const offer = s.offers[action.loan]
-      if (offer === undefined) return s.loans[action.loan] === undefined ? prerequisite(4) : DONE
-      return loanSetGate(s, action.loan, offer.terms)
-    }
-    case 'ConfidentialMPTMergeInbox':
-      return s.loans[action.borrower === 'borrowerA' ? 'A' : 'B'] === undefined
-        ? prerequisite(4)
-        : open()
-    case 'ConfidentialLoanPay': {
-      const loan = s.loans[action.loan]
-      if (loan === undefined) return prerequisite(4)
-      if (loan.status === 'repaid') return DONE
-      return loan.status === 'defaulted' ? closed('tecNO_PERMISSION') : open()
-    }
     case 'LoanBrokerSettle':
-      if (s.broker === undefined) return prerequisite(1)
-      return succeeded(s, 'ConfidentialLoanPay') ? open() : prerequisite(6)
-    case 'LoanManage': {
-      const loan = s.loans[action.loan]
-      return loan === undefined ? prerequisite(4) : manageGate(s, loan, action.flag)
-    }
+      return s.broker === undefined ? blocked(NO_BROKER) : open()
+    case 'LoanSetSign':
+      return signGate(s, action.terms)
+    case 'LoanSetCosign':
+      return cosignGate(s, action.borrower)
+    case 'LoanSetWithdraw':
+      return s.offer === undefined ? blocked('No offer to withdraw') : open()
+    case 'ConfidentialMPTMergeInbox':
+      return open()
+    case 'ConfidentialLoanPay':
+      return loanGate(s, action.loanID, (loan) => payGate(loan, action.mode))
+    case 'LoanManage':
+      return loanGate(s, action.loanID, (loan) => manageGate(s, loan, action.flag))
     case 'VaultWithdraw':
       return withdrawGate(s, action.depositor)
   }
@@ -403,14 +385,8 @@ function describe(error: unknown): string {
 export async function openDemo(kit: Kit, ledger: Ledger): Promise<Demo> {
   const { client } = ledger
   const display = createAmountDisplay(decryptCiphertext)
-  const txLog = new TxLog(kit)
-  const offers = new Map<LoanLabel, Offer>()
-  const read = async (): Promise<LedgerState> => {
-    const state = await readLedgerState(client, kit)
-    await txLog.fetch(client, state.ledgerIndex)
-    return state
-  }
-  let state = await read()
+  const offer: OfferSlot = { current: undefined }
+  let state: LedgerState = await readLedgerState(client, kit)
   let errors: readonly string[] = []
   let submitting: Action | undefined
   let version = 0
@@ -423,7 +399,7 @@ export async function openDemo(kit: Kit, ledger: Ledger): Promise<Demo> {
   const unsubscribeDisplay = display.subscribe(changed)
   const refresh = serialRefresh(async () => {
     try {
-      state = await read()
+      state = await readLedgerState(client, kit)
       errors = []
     } catch (error) {
       errors = [`Could not read the ledger: ${describe(error)}`]
@@ -431,13 +407,13 @@ export async function openDemo(kit: Kit, ledger: Ledger): Promise<Demo> {
     changed()
   })
   const stopFollowing = ledger.onLedgerClosed(() => void refresh())
-  const actions = createActions({ client, kit, display, offers, state: () => state })
+  const actions = createActions({ client, kit, display, offer, state: () => state })
 
   return {
     snapshot(viewer) {
       const cached = snapshots.get(viewer)
       if (cached?.version === version) return cached.snapshot
-      const view = { state, log: txLog.entries(), offers, submitting, errors, kit, display }
+      const view = { state, offer: offer.current, submitting, errors, kit, display }
       const snapshot = buildSnapshot(view, viewer, actions.keysOf(viewer))
       snapshots.set(viewer, { version, snapshot })
       return snapshot

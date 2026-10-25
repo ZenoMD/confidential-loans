@@ -43,3 +43,66 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: var(--header-top) var(--gutter) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.page-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 32px;
+}
+
+.page-brand {
+  font: var(--type-brand);
+  letter-spacing: var(--tracking-brand);
+}
+
+.page-phase {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
+
+.page-phase-name {
+  font: var(--type-control-on);
+  line-height: inherit;
+  color: var(--ink);
+}
+
+.page-ledger {
+  color: var(--dim);
+}
+
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.page-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 2px solid transparent;
+  color: var(--mute);
+  font: var(--type-control);
+}
+
+.page-tabs a[aria-current='page'] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+  font: var(--type-control-on);
+}

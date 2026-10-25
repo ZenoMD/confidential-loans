@@ -1,5 +1,8 @@
 # UI plan
 
+Superseded 2026-10-25: the web app now has one tab per actor instead of the 10-step flow, and no
+explorer screens. The canvas below still shows the step flow.
+
 Draft 2026-10-25. Two runs, each in a cloud agent. Run 1 updates the design canvas; run 2 builds
 the web app from the approved canvas. Flow and timing: `demo-plan.md`. Spec: `SPEC.md` at
 `3f88252`.

@@ -4,6 +4,35 @@ export type ValueView =
   | { readonly kind: 'amount'; readonly text: string; readonly tone: 'ink' | 'key' | 'dim' }
   | { readonly kind: 'redacted' }
 
+/** An amount with its label, as `<Value>` takes it. */
+export interface LabelledAmount {
+  readonly label: string
+  readonly shown: Shown
+}
+
+/** A labelled fact that is not an amount, such as a share count or a date. */
+export interface Fact {
+  readonly label: string
+  readonly text: string
+}
+
+/** What a whole-number field holds: the digits typed, and their value, 0 when empty. */
+export interface Whole {
+  readonly text: string
+  readonly value: bigint
+}
+
+/** Keeps the digits of what was typed into a whole-number field. */
+export function parseWhole(typed: string): Whole {
+  const text = typed.replace(/\D/g, '')
+  return { text, value: BigInt(text === '' ? 0 : text) }
+}
+
+/** Groups the thousands of a count, such as shares: `1,500`. */
+export function formatCount(value: bigint | number): string {
+  return value.toLocaleString('en-US')
+}
+
 /** Formats a whole-unit amount as `$105,000`. */
 export function formatAmount(value: bigint): string {
   if (value < 0n) {

@@ -1,13 +1,12 @@
-import type { Client, LedgerEntry, TransactionMetadata } from 'xrpl'
+import type { Client, LedgerEntry } from 'xrpl'
 
 import { rippledErrorCode } from './accounts.ts'
-import type { Borrower, Depositor, LoanLabel, Signer } from './demo-ledger.ts'
+import type { Borrower, Depositor, Signer } from './demo-ledger.ts'
 import type { Kit } from './kit.ts'
 
 const BORROWERS = ['borrowerA', 'borrowerB'] as const satisfies readonly Borrower[]
 const DEPOSITORS = ['depositorA', 'depositorB'] as const satisfies readonly Depositor[]
 const SIGNERS = ['brokerA', ...DEPOSITORS, ...BORROWERS] as const satisfies readonly Signer[]
-const LOAN_OF: Readonly<Record<Borrower, LoanLabel>> = { borrowerA: 'A', borrowerB: 'B' }
 
 type WithIndex<T> = T & { readonly index: string }
 
@@ -26,8 +25,10 @@ export interface LedgerState {
         readonly lendingBalance: LedgerEntry.MPToken | undefined
       }
     | undefined
-  /** Each borrower's newest Loan from that LoanBroker. */
-  readonly loans: Readonly<Partial<Record<LoanLabel, WithIndex<LedgerEntry.Loan>>>>
+  /** Both borrowers' Loans from that LoanBroker, by `LoanSequence`. */
+  readonly loans: ReadonlyArray<WithIndex<LedgerEntry.Loan>>
+  /** brokerA's next Sequence: a held offer signed with another one can no longer land. */
+  readonly brokerSequence: number
   /** Each signer's MPToken for the vault asset; undefined when it has not authorized it. */
   readonly assetTokens: Readonly<Record<Signer, LedgerEntry.MPToken | undefined>>
   /** Each depositor's MPToken for the vault shares. */
@@ -105,22 +106,25 @@ async function readLoans(
   loanBrokerID: string | undefined,
   ledgerIndex: number,
 ): Promise<LedgerState['loans']> {
-  if (loanBrokerID === undefined) return {}
-  const loans: Partial<Record<LoanLabel, WithIndex<LedgerEntry.Loan>>> = {}
-  await Promise.all(
-    BORROWERS.map(async (borrower) => {
-      const owned = await ownedObjects<LedgerEntry.Loan>(
-        client,
-        kit.accounts[borrower].address,
-        'loan',
-        ledgerIndex,
-      )
-      const ours = owned.filter((loan) => loan.LoanBrokerID === loanBrokerID)
-      const newest = ours.sort((a, b) => b.LoanSequence - a.LoanSequence)[0]
-      if (newest !== undefined) loans[LOAN_OF[borrower]] = newest
-    }),
+  if (loanBrokerID === undefined) return []
+  const owned = await Promise.all(
+    BORROWERS.map((borrower) =>
+      ownedObjects<LedgerEntry.Loan>(client, kit.accounts[borrower].address, 'loan', ledgerIndex),
+    ),
   )
-  return loans
+  return owned
+    .flat()
+    .filter((loan) => loan.LoanBrokerID === loanBrokerID)
+    .sort((a, b) => a.LoanSequence - b.LoanSequence)
+}
+
+async function readSequence(client: Client, account: string, ledgerIndex: number): Promise<number> {
+  const { result } = await client.request({
+    command: 'account_info',
+    account,
+    ledger_index: ledgerIndex,
+  })
+  return result.account_data.Sequence
 }
 
 function tokensOf<R extends string>(
@@ -155,9 +159,10 @@ export async function readLedgerState(client: Client, kit: Kit): Promise<LedgerS
       { mptoken: { mpt_issuance_id: issuanceID, account } },
       ledgerIndex,
     )
-  const [shareIssuance, loans, assetTokens, shareTokens] = await Promise.all([
+  const [shareIssuance, loans, brokerSequence, assetTokens, shareTokens] = await Promise.all([
     entry<LedgerEntry.MPTokenIssuance>(client, { mpt_issuance: vault.ShareMPTID }, ledgerIndex),
     readLoans(client, kit, broker?.entry.index, ledgerIndex),
+    readSequence(client, kit.accounts.brokerA.address, ledgerIndex),
     tokensOf(SIGNERS, (role) => token(kit.mptIssuanceID, kit.accounts[role].address)),
     tokensOf(DEPOSITORS, (role) => token(vault.ShareMPTID, kit.accounts[role].address)),
   ])
@@ -169,87 +174,8 @@ export async function readLedgerState(client: Client, kit: Kit): Promise<LedgerS
     shareIssuance,
     broker,
     loans,
+    brokerSequence,
     assetTokens,
     shareTokens,
-  }
-}
-
-/** A validated transaction of a demo account. */
-export interface LoggedTx {
-  readonly hash: string
-  readonly ledgerIndex: number
-  /** Ripple Epoch seconds. */
-  readonly closeTime: number
-  readonly tx: Readonly<Record<string, unknown>> & { readonly TransactionType: string }
-  readonly meta: TransactionMetadata
-}
-
-interface AccountTxEntry {
-  hash?: string
-  ledger_index?: number
-  tx_json?: LoggedTx['tx'] & { date?: number }
-  meta?: TransactionMetadata | string
-}
-
-/**
- * Every validated transaction of the five demo accounts, fetched incrementally with
- * `account_tx`. The node keeps a few hours of history, which covers a demo run.
- */
-export class TxLog {
-  private readonly accounts: readonly string[]
-  private readonly byHash = new Map<string, LoggedTx>()
-  private fetchedThrough = -1
-  private sorted: readonly LoggedTx[] = []
-
-  constructor(kit: Kit) {
-    this.accounts = SIGNERS.map((role) => kit.accounts[role].address)
-  }
-
-  /** Adds every transaction validated up to `ledgerIndex` that is not yet in the log. */
-  async fetch(client: Client, ledgerIndex: number): Promise<void> {
-    if (ledgerIndex <= this.fetchedThrough) return
-    // -1 asks for the earliest ledger the node holds.
-    const from = this.fetchedThrough < 0 ? -1 : this.fetchedThrough + 1
-    const pages = await Promise.all(
-      this.accounts.map((account) => this.fetchAccount(client, account, from, ledgerIndex)),
-    )
-    for (const tx of pages.flat()) this.byHash.set(tx.hash, tx)
-    this.fetchedThrough = ledgerIndex
-    this.sorted = [...this.byHash.values()].sort(
-      (a, b) => a.ledgerIndex - b.ledgerIndex || a.meta.TransactionIndex - b.meta.TransactionIndex,
-    )
-  }
-
-  /** The transactions in ledger order. */
-  entries(): readonly LoggedTx[] {
-    return this.sorted
-  }
-
-  private async fetchAccount(
-    client: Client,
-    account: string,
-    from: number,
-    through: number,
-  ): Promise<LoggedTx[]> {
-    const found: LoggedTx[] = []
-    let marker: unknown
-    do {
-      const { result } = await client.request({
-        command: 'account_tx',
-        account,
-        ledger_index_min: from,
-        ledger_index_max: through,
-        forward: true,
-        ...(marker === undefined ? {} : { marker }),
-      })
-      for (const item of result.transactions as AccountTxEntry[]) {
-        const { hash, ledger_index: index, tx_json: tx, meta } = item
-        if (hash === undefined || index === undefined || tx === undefined) continue
-        if (meta === undefined || typeof meta === 'string') continue
-        found.push({ hash, ledgerIndex: index, closeTime: tx.date ?? 0, tx, meta })
-      }
-      marker = result.marker
-    } while (marker !== undefined)
-    return found
   }
 }

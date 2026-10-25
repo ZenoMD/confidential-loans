@@ -47,11 +47,11 @@ describe('ctaView', () => {
     })
   })
 
-  it('links a missing prerequisite to its step', () => {
-    assert.deepEqual(view({ open: false, reason: 'prerequisite', step: 3 }), {
+  it('says what must happen first', () => {
+    assert.deepEqual(view({ open: false, reason: 'blocked', why: 'Create the LoanBroker first' }), {
       text: 'Draw',
       disabled: true,
-      line: { kind: 'link', text: 'Complete step 3 first', href: '#/3' },
+      line: { kind: 'note', text: 'Create the LoanBroker first' },
     })
   })
 
@@ -92,8 +92,8 @@ describe('ctaView', () => {
 
 describe('actionKey', () => {
   it('matches actions with the same fields, including bigints and terms', () => {
-    const a: Action = { type: 'LoanSetSign', loan: 'A', terms: { ...DEMO_TERMS } }
-    const b: Action = { type: 'LoanSetSign', loan: 'A', terms: DEMO_TERMS }
+    const a: Action = { type: 'LoanSetSign', borrower: 'borrowerA', terms: { ...DEMO_TERMS } }
+    const b: Action = { type: 'LoanSetSign', borrower: 'borrowerA', terms: DEMO_TERMS }
     assert.equal(actionKey(a), actionKey(b))
   })
 

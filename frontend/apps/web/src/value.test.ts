@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { formatAmount, valueView } from './value.ts'
+import { formatAmount, formatCount, parseWhole, valueView } from './value.ts'
 
 describe('formatAmount', () => {
   it('prefixes $ and groups thousands', () => {
@@ -42,5 +42,23 @@ describe('valueView', () => {
       text: 'Decrypting',
       tone: 'dim',
     })
+  })
+})
+
+describe('parseWhole', () => {
+  it('keeps only the digits typed', () => {
+    assert.deepEqual(parseWhole('$150,000'), { text: '150000', value: 150_000n })
+    assert.deepEqual(parseWhole('12a3'), { text: '123', value: 123n })
+  })
+
+  it('reads an empty field as 0', () => {
+    assert.deepEqual(parseWhole(''), { text: '', value: 0n })
+  })
+})
+
+describe('formatCount', () => {
+  it('groups thousands without a currency sign', () => {
+    assert.equal(formatCount(1500n), '1,500')
+    assert.equal(formatCount(60), '60')
   })
 })

@@ -6,6 +6,11 @@ sped up, so protocol waits do not need to fit a live slot. Timings: `product/dem
 
 ## UI flow
 
+The app has one tab per actor (Depositor, Broker, Borrower) rather than a fixed sequence of
+screens; the order below is the demo script. The Broker can offer any number of loans, one offer
+at a time, and a borrower can pay an installment or in full. The mini explorer (5 and 9) is
+dropped.
+
 Two loans, because one loan cannot be repaid, paid late and defaulted.
 
 1. Broker: create the confidential LoanBroker with its `HolderEncryptionKey` and `ZKProof`
@@ -14,11 +19,11 @@ Two loans, because one loan cannot be repaid, paid late and defaulted.
 3. Broker: draw into the Lending Balance (`LoanBrokerDraw`, public amount), then merge it into
    spending (`LoanBrokerMergeInbox`). SPEC.md §7, §9.
 4. Broker + borrowerA co-sign loan A; broker + borrowerB co-sign loan B (`LoanSet`).
-5. Mini explorer: outsider view, then auditor view.
+5. (Dropped) Mini explorer: outsider view, then auditor view.
 6. borrowerA: repay (`ConfidentialLoanPay`); the action merges the inbox first.
 7. Broker: settle the Lending Balance back to the vault (`LoanBrokerSettle`).
 8. Broker: impair, then default, loan B (`LoanManage`).
-9. Mini explorer: outsider view, then auditor view.
+9. (Dropped) Mini explorer: outsider view, then auditor view.
 10. Depositors: redeem (`VaultWithdraw`); the payout shows the default loss, which depositors
     carry in full.
 
@@ -42,7 +47,7 @@ Left out of the video: late payment (adds a 60 s wait and a third storyline), `L
 - **No first-loss cover.** A confidential LoanBroker has `ManagementFeeRate`, `CoverRateMinimum`,
   `CoverRateLiquidation` and `CoverAvailable` at 0, and `LoanBrokerCoverDeposit` fails
   (SPEC.md §4.2, §10). Depositors carry every loss.
-- **Mini explorer, not an indexer.** The app records every transaction it submits in this run (hash,
+- **Mini explorer, not an indexer.** Dropped 2026-10-25 with the move to tabs; kept for the record. The app records every transaction it submits in this run (hash,
   role, step) and stores the full validated JSON and metadata at submit time. The team node keeps
   only a few hours of history, so lookups by hash fail later. Two views of the same records:
   public (raw ciphertexts) and decrypted (done when each transaction lands, about 1.7 s per balance

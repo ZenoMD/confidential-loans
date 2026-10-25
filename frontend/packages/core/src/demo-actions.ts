@@ -12,16 +12,7 @@ import type { Client, ConfidentialKeypair, SubmittableTransaction, Wallet } from
 
 import { confidentialKeypair, walletFromSeed } from './accounts.ts'
 import type { AmountDisplay } from './amount.ts'
-import type {
-  Action,
-  Borrower,
-  Depositor,
-  KeyHolder,
-  LoanLabel,
-  Signer,
-  Time,
-  Viewer,
-} from './demo-ledger.ts'
+import type { Action, Borrower, Depositor, KeyHolder, Signer, Time, Viewer } from './demo-ledger.ts'
 import type { LedgerState } from './demo-state.ts'
 import { rippleTime } from './demo-view.ts'
 import { validateLoanTerms } from './demo.ts'
@@ -36,7 +27,6 @@ import { submitSigned, TxFailed } from './submit.ts'
 const OFFER_LEDGERS = 150
 const TF_LOAN_DEFAULT = 0x0001_0000
 const TF_LOAN_IMPAIR = 0x0002_0000
-const BORROWER: Readonly<Record<LoanLabel, Borrower>> = { A: 'borrowerA', B: 'borrowerB' }
 
 /** Why an action failed. The screens show `code`. */
 export class ActionFailed extends Error {
@@ -61,17 +51,26 @@ export class ActionFailed extends Error {
 
 /** A LoanSet the Broker signed, held until the borrower co-signs it. */
 export interface Offer {
-  readonly loan: LoanLabel
+  readonly borrower: Borrower
   readonly terms: LoanTerms
   readonly signedAt: Time
+  /** The Broker's Sequence the signature uses. */
+  readonly sequence: number
+  /** The last ledger that can include it. */
+  readonly lastLedger: number
   readonly blob: string
+}
+
+/** Holds the one offer the Broker can have outstanding: its signature takes its next Sequence. */
+export interface OfferSlot {
+  current: Offer | undefined
 }
 
 export interface ActionContext {
   readonly client: Client
   readonly kit: Kit
   readonly display: AmountDisplay
-  readonly offers: Map<LoanLabel, Offer>
+  readonly offer: OfferSlot
   /** The latest ledger read. */
   state(): LedgerState
 }
@@ -141,8 +140,6 @@ class ActionRunner implements Actions {
 
   keysOf(viewer: Viewer): readonly ConfidentialKeypair[] {
     switch (viewer) {
-      case 'auditor':
-        return [this.keys.mptAuditor, this.keys.loanAuditor]
       case 'brokerA':
       case 'borrowerA':
       case 'borrowerB':
@@ -175,9 +172,12 @@ class ActionRunner implements Actions {
         )
       }
       case 'LoanSetSign':
-        return this.signLoan(action.loan, action.terms)
+        return this.signLoan(action.borrower, action.terms)
       case 'LoanSetCosign':
-        return this.cosignLoan(action.loan)
+        return this.cosignLoan(action.borrower)
+      case 'LoanSetWithdraw':
+        this.context.offer.current = undefined
+        return
       case 'ConfidentialMPTMergeInbox': {
         const wallet = this.wallets[action.borrower]
         const params = { account: wallet.address, mptIssuanceID: this.kit.mptIssuanceID }
@@ -187,11 +187,11 @@ class ActionRunner implements Actions {
         )
       }
       case 'ConfidentialLoanPay':
-        return this.payLoan(action.loan)
+        return this.payLoan(action.loanID, action.mode)
       case 'LoanBrokerSettle':
         return this.settle()
       case 'LoanManage':
-        return this.manage(action.loan, action.flag)
+        return this.manage(action.loanID, action.flag)
       case 'VaultWithdraw':
         return this.withdraw(action.depositor)
     }
@@ -207,13 +207,13 @@ class ActionRunner implements Actions {
 
   private brokerParams(): { account: string; loanBrokerID: string } {
     const found = this.context.state().broker?.entry.index
-    if (found === undefined) throw unavailable('No LoanBroker for this vault yet: run step 1')
+    if (found === undefined) throw unavailable('No LoanBroker for this vault yet')
     return { account: this.broker.address, loanBrokerID: found }
   }
 
-  private loan(loan: LoanLabel): NonNullable<LedgerState['loans']['A']> {
-    const entry = this.context.state().loans[loan]
-    if (entry === undefined) throw unavailable(`Loan ${loan} does not exist yet`)
+  private loan(loanID: string): LedgerState['loans'][number] {
+    const entry = this.context.state().loans.find((loan) => loan.index === loanID)
+    if (entry === undefined) throw unavailable(`Loan ${loanID} does not exist`)
     return entry
   }
 
@@ -255,51 +255,70 @@ class ActionRunner implements Actions {
     return this.send(tx, wallet)
   }
 
-  private async signLoan(loan: LoanLabel, terms: LoanTerms): Promise<void> {
+  private async signLoan(borrower: Borrower, terms: LoanTerms): Promise<void> {
     const { client, broker, keys } = this
-    const signed = await build(async () => {
+    const filled = await build(async () => {
       validateLoanTerms(terms)
       const tx = await prepareConfidentialLoanSet(client, {
         ...this.brokerParams(),
-        borrower: this.wallets[BORROWER[loan]].address,
+        borrower: this.wallets[borrower].address,
         brokerKeypair: keys.brokerA,
         loanAuditorKey: keys.loanAuditor.publicKey,
         ...terms,
       })
-      const filled = await client.autofill(tx)
-      filled.LastLedgerSequence = (await client.getLedgerIndex()) + OFFER_LEDGERS
-      return broker.sign(filled)
+      const autofilled = await client.autofill(tx)
+      autofilled.LastLedgerSequence = (await client.getLedgerIndex()) + OFFER_LEDGERS
+      return autofilled
     })
-    const signedAt = rippleTime(this.context.state().closeTime)
-    this.context.offers.set(loan, { loan, terms, signedAt, blob: signed.tx_blob })
+    const signed = await build(() => broker.sign(filled))
+    this.context.offer.current = {
+      borrower,
+      terms,
+      signedAt: rippleTime(this.context.state().closeTime),
+      sequence: filled.Sequence ?? 0,
+      lastLedger: filled.LastLedgerSequence ?? 0,
+      blob: signed.tx_blob,
+    }
   }
 
-  private async cosignLoan(loan: LoanLabel): Promise<void> {
-    const offer = this.context.offers.get(loan)
-    if (offer === undefined) throw unavailable(`Loan ${loan} has no broker signature yet`)
-    const borrower = this.wallets[BORROWER[loan]]
-    const cosigned = await build(() => signLoanSetByCounterparty(borrower, offer.blob))
-    this.context.offers.delete(loan)
+  private async cosignLoan(borrower: Borrower): Promise<void> {
+    const offer = this.context.offer.current
+    if (offer?.borrower !== borrower) throw unavailable(`No offer to ${borrower} to co-sign`)
+    const cosigned = await build(() =>
+      signLoanSetByCounterparty(this.wallets[borrower], offer.blob),
+    )
+    this.context.offer.current = undefined
     await submitBlob(this.client, cosigned)
   }
 
-  private async payLoan(loan: LoanLabel): Promise<void> {
-    const entry = this.loan(loan)
-    const borrower = BORROWER[loan]
+  private async payLoan(loanID: string, mode: 'installment' | 'full'): Promise<void> {
+    const entry = this.loan(loanID)
+    const borrower = this.borrowerOf(entry.Borrower)
     const key = this.keys[borrower]
-    const owed = await this.decrypt(entry.BorrowerEncryptedAmountOwed, key, `Loan ${loan} owed`)
+    const owed = await this.decrypt(entry.BorrowerEncryptedAmountOwed, key, 'The amount owed')
+    const periodic =
+      mode === 'full'
+        ? owed
+        : await this.decrypt(entry.BorrowerEncryptedPeriodicPayment, key, 'The periodic payment')
     const params = {
       account: this.wallets[borrower].address,
-      loanID: entry.index,
-      amount: owed,
+      loanID,
+      amount: periodic,
       amountOwed: owed,
-      fullPayment: true,
+      periodicPayment: periodic,
+      fullPayment: mode === 'full',
       borrowerKeypair: key,
     }
     await this.send(
       build(() => prepareConfidentialLoanPay(this.client, params)),
       this.wallets[borrower],
     )
+  }
+
+  private borrowerOf(address: string): Borrower {
+    if (address === this.wallets.borrowerA.address) return 'borrowerA'
+    if (address === this.wallets.borrowerB.address) return 'borrowerB'
+    throw unavailable(`${address} is not a demo borrower`)
   }
 
   private async settle(): Promise<void> {
@@ -314,11 +333,11 @@ class ActionRunner implements Actions {
     )
   }
 
-  private manage(loan: LoanLabel, flag: 'impair' | 'default'): Promise<void> {
+  private manage(loanID: string, flag: 'impair' | 'default'): Promise<void> {
     const tx = {
       TransactionType: 'LoanManage',
       Account: this.broker.address,
-      LoanID: this.loan(loan).index,
+      LoanID: this.loan(loanID).index,
       Flags: flag === 'impair' ? TF_LOAN_IMPAIR : TF_LOAN_DEFAULT,
     } as const
     return this.send(tx, this.broker)
@@ -341,7 +360,7 @@ class ActionRunner implements Actions {
 /**
  * Creates the action runner for one kit.
  *
- * @param context - Client, kit, display, offer store and the latest state.
+ * @param context - Client, kit, display, offer slot and the latest state.
  * @returns The runner.
  */
 export function createActions(context: ActionContext): Actions {
