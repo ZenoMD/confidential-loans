@@ -1,0 +1,38 @@
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(var(--steps-columns), minmax(0, 1fr));
+  gap: 16px;
+  max-width: 640px;
+}
+
+.steps-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* The canvas progress row (04:84): done is white, current 0.48, upcoming 0.16. */
+.steps-bar {
+  height: 3px;
+  background: var(--progress-upcoming);
+}
+
+.steps-bar[data-state='current'] {
+  background: var(--progress-done);
+}
+
+.steps-bar[data-state='done'] {
+  background: var(--ink);
+}
+
+.steps-label {
+  font: var(--type-step-name);
+}
+
+.steps-note {
+  font: var(--type-body-sm);
+  color: var(--mute);
+}
