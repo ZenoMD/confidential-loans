@@ -59,7 +59,7 @@ node scripts/setup.ts
 pnpm build && pnpm --filter web exec vite preview
 ```
 
-Open the URL Vite prints, then `#/` for the flow map, or `#/1` to work through to step 10. Use
+Open the URL Vite prints: it starts at step 1, and the step bar moves through to step 10. Use
 the production build: under `pnpm dev` the crypto WASM fails to load.
 
 The defaults (300 s Subscription, 600 s Investment) suit a demo at human pace. For a quick run,

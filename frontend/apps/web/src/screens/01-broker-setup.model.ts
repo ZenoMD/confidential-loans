@@ -1,6 +1,6 @@
 import { DEMO_AMOUNTS } from '@confidential-loans/core/demo-ledger'
 import type { Action, Snapshot, Viewer } from '@confidential-loans/core/demo-ledger'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import type { RoleKind } from '#web/stepNav.ts'
 
 /** Screen 1 shows no encrypted amount; it reads the ledger as the Broker. */
@@ -56,6 +56,6 @@ export function step01(s: Snapshot, ui: Step01Ui): Step01Model {
       action: { type: 'LoanBrokerSet', debtMaximum: BigInt(text === '' ? 0 : text) },
       label: 'Create confidential LoanBroker',
     },
-    next: { href: screenHref(2), label: 'Continue to step 2' },
+    next: { href: stepHref(2), label: 'Continue to step 2' },
   }
 }

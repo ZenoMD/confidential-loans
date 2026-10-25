@@ -1,5 +1,5 @@
-import { screenHref } from './route.ts'
-import type { Step, Screen } from './route.ts'
+import { stepHref } from './route.ts'
+import type { Step } from './route.ts'
 
 export type RoleKind = 'broker' | 'depositor' | 'borrower' | 'explorer'
 export type Phase = 'Subscription' | 'Investment' | 'Redemption'
@@ -20,8 +20,7 @@ export interface StepItem {
 
 export interface StepNavModel {
   readonly items: readonly StepItem[]
-  /** Undefined on the flow map. */
-  readonly phase: Phase | undefined
+  readonly phase: Phase
 }
 
 export const STEPS: readonly { n: Step; label: string; icons: readonly RoleKind[] }[] = [
@@ -44,19 +43,19 @@ export function phaseOf(step: Step): Phase {
   return 'Subscription'
 }
 
-function stateOf(n: Step, screen: Screen): StepState {
+function stateOf(n: Step, screen: Step): StepState {
   if (n < screen) return 'done'
   return n === screen ? 'current' : 'upcoming'
 }
 
 /** The step navigation as seen from `screen`. */
-export function stepNav(screen: Screen): StepNavModel {
+export function stepNav(screen: Step): StepNavModel {
   const items = STEPS.map(({ n, label, icons }): StepItem => {
     const state = stateOf(n, screen)
     return {
       n,
       label,
-      href: screenHref(n),
+      href: stepHref(n),
       icons,
       state,
       ariaCurrent: state === 'current' ? 'page' : 'false',
@@ -64,5 +63,5 @@ export function stepNav(screen: Screen): StepNavModel {
       text: state === 'current' ? `${n} ${label}` : String(n),
     }
   })
-  return { items, phase: screen === 0 ? undefined : phaseOf(screen) }
+  return { items, phase: phaseOf(screen) }
 }

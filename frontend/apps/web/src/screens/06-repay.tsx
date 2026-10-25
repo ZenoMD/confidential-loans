@@ -3,7 +3,7 @@ import { Cta } from '#web/Cta.tsx'
 import { useSnapshot } from '#web/ledger.tsx'
 import { Page } from '#web/Page.tsx'
 import { Role } from '#web/Role.tsx'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import { Steps } from '#web/Steps.tsx'
 import { Value } from '#web/Value.tsx'
 import { repayModel } from '#web/screens/06-repay.model.ts'
@@ -42,7 +42,7 @@ function Repay() {
         <Steps items={steps} />
         <Cta action={cta.action} label={cta.label} />
       </section>
-      <a href={screenHref(7)} style={CONTINUE}>
+      <a href={stepHref(7)} style={CONTINUE}>
         Continue to step 7
       </a>
     </>

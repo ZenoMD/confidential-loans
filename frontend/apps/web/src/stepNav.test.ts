@@ -5,7 +5,7 @@ import type { Step } from './route.ts'
 
 describe('stepNav', () => {
   it('lists the ten demo steps in order, each linking to its screen', () => {
-    const { items } = stepNav(0)
+    const { items } = stepNav(1)
     assert.deepEqual(
       items.map((it) => [it.n, it.label, it.href]),
       [
@@ -24,7 +24,7 @@ describe('stepNav', () => {
   })
 
   it('shows the roles that act on each step', () => {
-    const icons = stepNav(0).items.map((it) => it.icons)
+    const icons = stepNav(1).items.map((it) => it.icons)
     assert.deepEqual(icons, [
       ['broker'],
       ['depositor'],
@@ -37,14 +37,6 @@ describe('stepNav', () => {
       ['explorer'],
       ['depositor'],
     ])
-  })
-
-  it('marks every step upcoming on the flow map', () => {
-    const { items } = stepNav(0)
-    assert.ok(items.every((it) => it.state === 'upcoming'))
-    assert.ok(items.every((it) => it.ariaCurrent === 'false'))
-    assert.equal(items[0]?.ariaLabel, 'Step 1: Create broker')
-    assert.equal(items[0]?.text, '1')
   })
 
   it('marks earlier steps done, the given step current, and later steps upcoming', () => {
@@ -74,7 +66,6 @@ describe('stepNav', () => {
   })
 
   it('carries the phase of the given step', () => {
-    assert.equal(stepNav(0).phase, undefined)
     assert.equal(stepNav(2).phase, 'Subscription')
     assert.equal(stepNav(10).phase, 'Redemption')
   })

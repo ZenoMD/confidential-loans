@@ -1,5 +1,5 @@
 import type { Action, Gate, Time } from '@confidential-loans/core/demo-ledger'
-import { screenHref } from './route.ts'
+import { stepHref } from './route.ts'
 
 /** The one line under a CTA: a failure, a gate note, or a link to the missing step. */
 export type CtaLine =
@@ -57,7 +57,7 @@ function gateLine(gate: Gate): CtaLine | undefined {
     case 'closed':
       return { kind: 'note', text: gate.code }
     case 'prerequisite':
-      return { kind: 'link', text: `Complete step ${gate.step} first`, href: screenHref(gate.step) }
+      return { kind: 'link', text: `Complete step ${gate.step} first`, href: stepHref(gate.step) }
     case 'done':
       return undefined
   }

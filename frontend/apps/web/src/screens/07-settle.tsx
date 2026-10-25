@@ -5,7 +5,7 @@ import { Page } from '#web/Page.tsx'
 import { Role } from '#web/Role.tsx'
 import { Steps } from '#web/Steps.tsx'
 import { Value } from '#web/Value.tsx'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import { model07 } from '#web/screens/07-settle.model.ts'
 import type { Shown } from '@confidential-loans/core/amount'
 
@@ -108,7 +108,7 @@ function Settle() {
         {view.cta !== undefined && <Cta action={view.cta.action} label={view.cta.label} />}
       </section>
 
-      <a href={screenHref(8)} style={CONTINUE}>
+      <a href={stepHref(8)} style={CONTINUE}>
         Continue to step 8
       </a>
     </>

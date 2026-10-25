@@ -1,22 +1,22 @@
 import './StepNav.css'
 import { RoleIcon } from './Role.tsx'
-import { screenHref } from './route.ts'
-import type { Screen } from './route.ts'
+import { stepHref } from './route.ts'
+import type { Step } from './route.ts'
 import { stepNav } from './stepNav.ts'
 
-/** Brand link to the flow map, the vault phase, and the ten demo steps. */
-export function StepNav({ step }: { step: Screen }) {
+/** Brand link to step 1, the vault phase, and the ten demo steps. */
+export function StepNav({ step }: { step: Step }) {
   const { items, phase } = stepNav(step)
   return (
     <header className="stepnav">
       <div className="stepnav-top">
-        <a className="stepnav-brand" href={screenHref(0)}>
+        <a className="stepnav-brand" href={stepHref(1)}>
           <span className="stepnav-logo">
             zeno<span className="stepnav-dot">.</span>
           </span>
           <span className="stepnav-product">Confidential Loans</span>
         </a>
-        {phase !== undefined && <span className="stepnav-phase">{phase}</span>}
+        <span className="stepnav-phase">{phase}</span>
       </div>
       <nav className="stepnav-steps" aria-label="Demo steps">
         <ol>

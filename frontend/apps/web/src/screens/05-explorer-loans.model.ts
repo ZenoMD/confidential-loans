@@ -1,6 +1,6 @@
 import type { Shown } from '@confidential-loans/core/amount'
 import type { Signer, Snapshot, TxRecord, Viewer } from '@confidential-loans/core/demo-ledger'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import type { Step } from '#web/route.ts'
 
 /** The two ways the explorers read the ledger. */
@@ -132,7 +132,7 @@ export function explorerBoard(
   const first = steps[0]
   const status: ExplorerStatus =
     rows.length === 0
-      ? { kind: 'prerequisite', text: `Complete step ${first} first`, href: screenHref(first) }
+      ? { kind: 'prerequisite', text: `Complete step ${first} first`, href: stepHref(first) }
       : { kind: 'ready' }
   return { ...base, status, rows, errors: s.errors }
 }
@@ -148,6 +148,6 @@ export function explorerLoans(view: ExplorerViewer, s: Snapshot | null): Explore
   return {
     ...explorerBoard(view, s, [1, 2, 3, 4]),
     action: 'Reads the ledger',
-    next: { href: screenHref(6), label: 'Continue to step 6' },
+    next: { href: stepHref(6), label: 'Continue to step 6' },
   }
 }

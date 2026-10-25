@@ -3,7 +3,7 @@ import { Cta } from '#web/Cta.tsx'
 import { useSnapshot } from '#web/ledger.tsx'
 import { Page } from '#web/Page.tsx'
 import { Role } from '#web/Role.tsx'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import { Value } from '#web/Value.tsx'
 import { impairDefault } from '#web/screens/08-impair-default.model.ts'
 import type { ImpairDefaultModel } from '#web/screens/08-impair-default.model.ts'
@@ -69,7 +69,7 @@ function Body() {
           </div>
         </section>
       )}
-      <a className="impair-continue" href={screenHref(9)}>
+      <a className="impair-continue" href={stepHref(9)}>
         Continue to step 9
       </a>
     </>

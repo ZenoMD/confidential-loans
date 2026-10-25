@@ -5,7 +5,6 @@ import { Cta } from '#web/Cta.tsx'
 import { useSnapshot } from '#web/ledger.tsx'
 import { Page } from '#web/Page.tsx'
 import { Role } from '#web/Role.tsx'
-import { screenHref } from '#web/route.ts'
 import { Toggle } from '#web/Toggle.tsx'
 import { Value } from '#web/Value.tsx'
 import { DEPOSITOR_OPTIONS, depositorName, redeemModel } from '#web/screens/10-redeem.model.ts'
@@ -37,16 +36,6 @@ const FAILURE: CSSProperties = {
   font: 'var(--type-body-sm)',
   color: 'var(--loss)',
   overflowWrap: 'anywhere',
-}
-const BACK: CSSProperties = {
-  alignSelf: 'flex-start',
-  display: 'inline-flex',
-  alignItems: 'center',
-  minHeight: 44,
-  padding: '0 20px',
-  borderRadius: 'var(--radius-pill)',
-  border: '1px solid var(--rule-strong)',
-  font: 'var(--type-control)',
 }
 
 function Redemption({ depositor }: { depositor: Depositor }) {
@@ -86,9 +75,6 @@ function Redemption({ depositor }: { depositor: Depositor }) {
           </p>
         )}
       </div>
-      <a href={screenHref(0)} style={BACK}>
-        Back to the flow map
-      </a>
     </>
   )
 }

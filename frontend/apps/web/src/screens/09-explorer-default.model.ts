@@ -1,6 +1,6 @@
 import type { Shown } from '@confidential-loans/core/amount'
 import type { Snapshot } from '@confidential-loans/core/demo-ledger'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import { explorerBoard } from './05-explorer-loans.model.ts'
 import type { ExplorerModel, ExplorerViewer, Link } from './05-explorer-loans.model.ts'
 
@@ -61,7 +61,7 @@ export function explorerDefault(view: ExplorerViewer, s: Snapshot | null): Explo
     ...explorerBoard(view, s, [6, 7, 8]),
     action: 'Reads the ledger after the default',
     totals: totals(s),
-    earlier: { href: screenHref(5), label: 'Earlier transactions on step 5' },
-    next: { href: screenHref(10), label: 'Continue to step 10' },
+    earlier: { href: stepHref(5), label: 'Earlier transactions on step 5' },
+    next: { href: stepHref(10), label: 'Continue to step 10' },
   }
 }

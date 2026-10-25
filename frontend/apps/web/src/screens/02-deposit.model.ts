@@ -1,6 +1,6 @@
 import { DEMO_AMOUNTS } from '@confidential-loans/core/demo-ledger'
 import type { Action, Depositor, Shown, Snapshot } from '@confidential-loans/core/demo-ledger'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 import type { RoleKind } from '#web/stepNav.ts'
 import type { ToggleOption } from '#web/Toggle.tsx'
 
@@ -91,6 +91,6 @@ export function step02(s: Snapshot, ui: Step02Ui): Step02Model {
       },
       label: `Deposit as ${name}`,
     },
-    next: { href: screenHref(3), label: 'Continue to step 3' },
+    next: { href: stepHref(3), label: 'Continue to step 3' },
   }
 }

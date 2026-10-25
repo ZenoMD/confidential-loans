@@ -7,7 +7,7 @@ import type {
   Snapshot,
   Viewer,
 } from '@confidential-loans/core/demo-ledger'
-import { screenHref } from '#web/route.ts'
+import { stepHref } from '#web/route.ts'
 
 /** Broker A holds the key every loan amount is encrypted to, so screen 4 reads through it. */
 export const ORIGINATE_VIEWER: Viewer = 'brokerA'
@@ -129,6 +129,6 @@ export function originate(s: Snapshot, loan: LoanLabel): OriginateModel {
     ],
     steps: steps(stage, borrower),
     cta: cta(stage, loan, borrower),
-    next: { href: screenHref(5), label: 'Continue to step 5' },
+    next: { href: stepHref(5), label: 'Continue to step 5' },
   }
 }
