@@ -303,6 +303,14 @@ function manageGate(s: Snapshot, loan: LoanView, flag: 'impair' | 'default'): Ga
   return s.now > boundary ? open() : opens(boundary + SECOND)
 }
 
+/** Done once the depositor's whole wallet is in the vault; tecEXPIRED and amount checks follow. */
+function depositGate(s: Snapshot, depositor: Depositor, amount: bigint): Gate {
+  const { wallet, shares } = s.depositors[depositor]
+  if (shares > 0n && wallet.value === 0n) return DONE
+  if (s.phase !== 'subscription') return closed('tecEXPIRED')
+  return amountGate(amount, wallet.value) ?? open()
+}
+
 function withdrawGate(s: Snapshot, depositor: Depositor): Gate {
   const { shares, deposited } = s.depositors[depositor]
   if (shares === 0n) return deposited === undefined ? prerequisite(2) : DONE
@@ -325,8 +333,7 @@ export function gate(s: Snapshot, action: Action): Gate {
     case 'LoanBrokerSet':
       return s.broker === undefined ? open() : DONE
     case 'VaultDeposit':
-      if (s.phase !== 'subscription') return closed('tecEXPIRED')
-      return amountGate(action.amount, s.depositors[action.depositor].wallet.value) ?? open()
+      return depositGate(s, action.depositor, action.amount)
     case 'LoanBrokerDraw':
       return drawGate(s, action.amount)
     case 'LoanBrokerMergeInbox':

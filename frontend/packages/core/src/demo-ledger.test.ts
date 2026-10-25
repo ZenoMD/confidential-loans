@@ -682,8 +682,30 @@ async function snapshotAt(
   return demo.snapshot('outsider')
 }
 
+function undeposited(devnet: FakeDevnet): void {
+  devnet.set(`token:${ISSUANCE}:${address('depositorA')}`, { MPTAmount: '1500' })
+  devnet.set(`token:${SHARES}:${address('depositorA')}`, { MPTAmount: '0' })
+}
+
+it('gate marks a deposit done once the wallet is in the vault, in any phase', async () => {
+  const deposit = { type: 'VaultDeposit', depositor: 'depositorA', amount: 1500n } as const
+  assert.deepEqual(gate(await snapshotAt(SUBSCRIPTION), deposit), { open: false, reason: 'done' })
+  assert.deepEqual(gate(await snapshotAt(SUBSCRIPTION + 1), deposit), {
+    open: false,
+    reason: 'done',
+  })
+  const empty = await snapshotAt(SUBSCRIPTION, (devnet) => {
+    devnet.set(`token:${SHARES}:${address('depositorA')}`, { MPTAmount: '0' })
+  })
+  assert.deepEqual(gate(empty, deposit), {
+    open: false,
+    reason: 'closed',
+    code: 'tecINSUFFICIENT_FUNDS',
+  })
+})
+
 it('gate closes deposits after Subscription and opens draws one second later', async () => {
-  const during = await snapshotAt(SUBSCRIPTION)
+  const during = await snapshotAt(SUBSCRIPTION, undeposited)
   assert.deepEqual(gate(during, { type: 'VaultDeposit', depositor: 'depositorA', amount: 0n }), {
     open: false,
     reason: 'closed',
@@ -694,7 +716,7 @@ it('gate closes deposits after Subscription and opens draws one second later', a
     reason: 'opens',
     at: toMs(SUBSCRIPTION + 1),
   })
-  const after = await snapshotAt(SUBSCRIPTION + 1)
+  const after = await snapshotAt(SUBSCRIPTION + 1, undeposited)
   assert.deepEqual(gate(after, { type: 'VaultDeposit', depositor: 'depositorA', amount: 1n }), {
     open: false,
     reason: 'closed',
