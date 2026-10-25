@@ -19,7 +19,8 @@ export interface SignatureStep {
   readonly state: 'done' | 'current' | 'todo'
 }
 
-export interface OriginateModel {
+/** The role column, which shows before the ledger is read. */
+export interface OriginateAside {
   readonly role: { readonly who: string; readonly action: string }
   readonly toggle: {
     readonly label: string
@@ -29,6 +30,9 @@ export interface OriginateModel {
     ]
     readonly selected: LoanLabel
   }
+}
+
+export interface OriginateModel {
   /** Principal, Periodic payment and Amount owed. */
   readonly values: readonly { readonly label: string; readonly shown: Shown }[]
   /** Payment interval, Payments and Grace period, read-only. */
@@ -89,6 +93,21 @@ function cta(stage: Stage, loan: LoanLabel, borrower: string): OriginateModel['c
   return { action: { type: 'LoanSetCosign', loan }, label: `Co-sign as ${borrower}` }
 }
 
+/** Screen 4's role column for the loan the toggle selects. */
+export function originateAside(loan: LoanLabel): OriginateAside {
+  return {
+    role: { who: 'Broker and borrowers', action: `Co-sign loan ${loan} with Borrower ${loan}` },
+    toggle: {
+      label: 'Loan',
+      options: [
+        { value: 'A', label: 'Loan A' },
+        { value: 'B', label: 'Loan B' },
+      ],
+      selected: loan,
+    },
+  }
+}
+
 /**
  * Screen 4: what the board shows for the selected loan. The stage comes from the ledger and the
  * held offers, not from clicks, so there is no replay loop (K1); the toggle switches loans. Once
@@ -102,15 +121,6 @@ export function originate(s: Snapshot, loan: LoanLabel): OriginateModel {
   const stage = stageOf(s, loan)
   const terms = s.offers[loan]?.terms ?? DEMO_TERMS
   return {
-    role: { who: 'Broker and borrowers', action: `Co-sign loan ${loan} with ${borrower}` },
-    toggle: {
-      label: 'Loan',
-      options: [
-        { value: 'A', label: 'Loan A' },
-        { value: 'B', label: 'Loan B' },
-      ],
-      selected: loan,
-    },
     values: values(s, loan, terms),
     schedule: [
       { label: 'Payment interval', value: `${terms.paymentInterval} seconds` },

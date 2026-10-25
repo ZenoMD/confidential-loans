@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { DEMO_TERMS } from '@confidential-loans/core/demo-ledger'
 import type { LoanLabel, LoanView, Snapshot } from '@confidential-loans/core/demo-ledger'
-import { originate, ORIGINATE_VIEWER } from './04-originate.model.ts'
+import { originate, originateAside, ORIGINATE_VIEWER } from './04-originate.model.ts'
 
 const NOW = Date.UTC(2026, 9, 25, 12, 0, 0)
 const PUBLIC_ZERO = { visibility: 'public', value: 0n } as const
@@ -75,15 +75,15 @@ describe('originate', () => {
     assert.equal(ORIGINATE_VIEWER, 'brokerA')
   })
 
-  it('names the role and the selected loan with its borrower', () => {
-    const a = originate(snapshot(), 'A')
+  it('names the role and the selected loan with its borrower, before the ledger is read', () => {
+    const a = originateAside('A')
     assert.equal(a.role.who, 'Broker and borrowers')
     assert.equal(a.role.action, 'Co-sign loan A with Borrower A')
-    assert.equal(originate(snapshot(), 'B').role.action, 'Co-sign loan B with Borrower B')
+    assert.equal(originateAside('B').role.action, 'Co-sign loan B with Borrower B')
   })
 
   it('offers the Loan A and Loan B toggle with the selected loan pressed', () => {
-    const model = originate(snapshot(), 'B')
+    const model = originateAside('B')
     assert.equal(model.toggle.label, 'Loan')
     assert.deepEqual(model.toggle.options, [
       { value: 'A', label: 'Loan A' },
