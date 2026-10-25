@@ -24,13 +24,20 @@ The protocol for lenders works exactly as in XLS-66. Lenders contribute MPTs to 
 
 The broker withdraws funds from the vault with a `LoanBrokerDraw` transaction. This moves funds from the vault into the brokers confidential lending balance. The MPTs move into the lending balance confidential inbox and must be moved to the lending spendable balance by calling `LoanBrokerMergeInbox`. This lending balance is confidential and can be used to fund multiple loans without revealing how much is allocated to each loan. 
 
-To issue a loan a broker and borrower agree to loan terms off-chain and co-sign a `LoanSet` transaction as in XLS-66. The difference being that the amount, amount owed, and periodic payment values are sent as ELGamal encrypted fields encrypted to the broker, borrower and auditor. A ZK proof ensures consistency between these encrypted values and applies the relevant range check. The homomorphic properties of ELGamal allow the ledger to debit the broker lending balance and credit the borrowers confidential inbox without revealing the amount publicly. Once the borrower has received their loan they can convert it to a spendable confidential balance and proceed to spend it confidentially as per XLS-96.
+To issue a loan a broker and borrower agree to loan terms off-chain and co-sign a `LoanSet` transaction as in XLS-66. The difference being that the loan terms (principal, amount owed, and periodic payment) values are sent as ELGamal encrypted fields encrypted to the broker, borrower and auditor. A ZK proof ensures consistency between these encrypted values and applies the relevant range check. The homomorphic properties of ELGamal allow the ledger to debit the broker lending balance and credit the borrowers confidential inbox without revealing the principal publicly. Once the borrower has received their loan they can convert it to a spendable confidential balance and proceed to spend it confidentially as per XLS-96.
 
 The borrower makes periodic confidential repayments via `ConfidentialLoanPay` transactions. This contains the repayment amount encrypted to the broker, borrower, and auditor. Because the ledger cannot read the encrypted payment amount directly it relies on some additional ZK proofs to ensure it meets the minimum repayment requirements for a periodic payment, or repays the balance of the loan if it is a repayment in full. 
 
 ## Amendments
 
 This amendment (`ConfidentialLendingProtocol`) builds upon `LendingProtocolV1_1` and `ConfidentialTransfer`.
+
+## Terminology
+
+- **Broker Key**: The `HolderEncryptionKey` of the `LoanBroker` pseudo-account's `MPToken`, registered by `LoanBrokerSet`.
+- **Lending Balance**: The confidential balance on that `MPToken`.
+- **MPT Auditor**: The holder of the issuance's `AuditorEncryptionKey` (XLS-96). Can read the Lending Balance and the amounts moved into and out of it.
+- **Loan Auditor**: The holder of a `Loan`'s `LoanAuditorEncryptionKey`, agreed by the Broker and Borrower in `LoanSet`. Can read all of that `Loan`'s encrypted terms.
 
 ## 4. Ledger Entry: `LoanBroker`
 
@@ -53,19 +60,25 @@ On a confidential `LoanBroker`:
 
 ## 5. Ledger Entry: `Loan`
 
-<!-- The `Loan` ledger entry is extended with following additional fields and one additional flag. All other fields are as in XLS-66.
+A `Loan` created by a confidential `LoanBroker` is confidential. It gains the fields and flag below. All other fields are as in XLS-66.
 
 ### 5.1. Fields
 
-| Field Name                         | Required? | JSON Type | Internal Type | Default Value | Description                                                                                                  |
-| :--------------------------------- | :-------- | :-------- | :------------ | :------------ | :----------------------------------------------------------------------------------------------------------- |
-| `BorrowerEncryptedAmountOwed`      | Conditional       | `string`  | `BLOB`        | N/A           | Amount Owed, encrypted under the Borrower's `HolderEncryptionKey`.                                           |
-| `BrokerEncryptedAmountOwed`        | Conditional       | `string`  | `BLOB`        | N/A           | Amount Owed, encrypted under the Broker Key (the `HolderEncryptionKey` of the LoanBroker pseudo-account's `MPToken`). |
-| `BorrowerEncryptedPeriodicPayment` | Conditional       | `string`  | `BLOB`        | N/A           | Periodic Payment, encrypted under the Borrower's `HolderEncryptionKey`.                                      |
-| `BrokerEncryptedPeriodicPayment`   | Conditional       | `string`  | `BLOB`        | N/A           | Periodic Payment, encrypted under the Broker Key (the `HolderEncryptionKey` of the LoanBroker pseudo-account's `MPToken`). |
-| `ConfidentialLoanVersion`          | Conditional       | `number`  | `UINT32`      | N/A           | Set to 0 when the `Loan` is created and incremented whenever an encrypted field changes. Bound into payment proofs so that they cannot be replayed. |
+Each hidden term is stored as three 66-byte XLS-96 ElGamal ciphertexts of the same value: under the Borrower's `HolderEncryptionKey`, the Broker Key, and `LoanAuditorEncryptionKey`.
 
-"Conditional" fields are present if and only if `lsfLoanConfidential` is set. Each encrypted field is a 66-byte XLS-96 ElGamal ciphertext.
+| Term             | Fields                                                                                        | Description                                               |
+| :--------------- | :-------------------------------------------------------------------------------------------- | :-------------------------------------------------------- |
+| Principal        | `BorrowerEncryptedPrincipal`, `BrokerEncryptedPrincipal`, `LoanAuditorEncryptedPrincipal`       | The amount lent.                                          |
+| Amount Owed      | `BorrowerEncryptedAmountOwed`, `BrokerEncryptedAmountOwed`, `LoanAuditorEncryptedAmountOwed`    | The amount still to repay. Reduced by each payment.       |
+| Periodic Payment | `BorrowerEncryptedPeriodicPayment`, `BrokerEncryptedPeriodicPayment`, `LoanAuditorEncryptedPeriodicPayment` | The minimum regular payment.                  |
+| Interest Rate    | `BorrowerEncryptedInterestRate`, `BrokerEncryptedInterestRate`, `LoanAuditorEncryptedInterestRate` | The annual interest rate, in 1/10 basis points.     |
+
+| Field Name                 | Required    | JSON Type | Internal Type | Default Value | Description                                                         |
+| :------------------------- | :---------- | :-------- | :------------ | :------------ | :------------------------------------------------------------------ |
+| `LoanAuditorEncryptionKey` | Conditional | `string`  | `BLOB`        | N/A           | The Loan Auditor's 33-byte compressed ElGamal public key.           |
+| `ConfidentialLoanVersion`  | Conditional | `number`  | `UINT32`      | 0             | Incremented whenever an encrypted field changes. Bound into proofs. |
+
+All of these fields (`BLOB` unless stated) are present if and only if `lsfLoanConfidential` is set.
 
 ### 5.2. Flags
 
@@ -73,19 +86,14 @@ On a confidential `LoanBroker`:
 | :-------------------- | :----------- | :---------- | :-------------------------- |
 | `lsfLoanConfidential` | `0x00080000` | No          | The `Loan` is confidential. |
 
-### 5.3. Existing Fields
+### 5.3. Invariants
 
 On a confidential `Loan`:
 
-- `TotalValueOutstanding`, `PrincipalOutstanding`, `ManagementFeeOutstanding`, `PeriodicPayment` and `LoanScale` are always 0.
-- The fee fields (`LoanOriginationFee`, `LoanServiceFee`, `LatePaymentFee`, `ClosePaymentFee`, `OverpaymentFee`) and the interest-rate fields (`InterestRate`, `LateInterestRate`, `CloseInterestRate`, `OverpaymentInterestRate`) are always 0.
+- `PrincipalOutstanding`, `TotalValueOutstanding`, `ManagementFeeOutstanding`, `PeriodicPayment`, `LoanScale`, the fee fields and the interest-rate fields are 0.
 - `lsfLoanOverpayment` is never set.
-
-### 5.4. Invariants
-
-- If `lsfLoanConfidential` is set, all of the conditional fields are present, and the fields listed above as always 0 are 0.
-- `lsfLoanConfidential` never changes.
-- The XLS-66 invariant that a `Loan` with `PaymentRemaining` greater than 0 has a non-zero `TotalValueOutstanding`, `PrincipalOutstanding` or `ManagementFeeOutstanding` does not apply to a confidential `Loan`, whose amounts are held in the encrypted fields. -->
+- Only the Amount Owed ciphertexts change after creation, and `ConfidentialLoanVersion` changes with them.
+- The XLS-66 invariant that a `Loan` with `PaymentRemaining` > 0 has a non-zero outstanding amount does not apply.
 
 ## 6. Transaction: `LoanBrokerSet`
 
@@ -226,35 +234,62 @@ In addition to XLS-66:
 
 ## 11. Transaction: `LoanSet`
 
-<!-- Create a new `Loan` entry and transfer MPTs from the broker lending balance to the borrowers confidential balance
+With a confidential `LoanBroker`, `LoanSet` creates a confidential `Loan`. As in XLS-66, the Broker and the Borrower both sign it. The principal moves from the Lending Balance to the Borrower's confidential inbox, as in an XLS-96 `ConfidentialMPTSend` from the `LoanBroker` pseudo-account to the Borrower.
 
 ### 11.1. Fields
 
-These fields are added. All other fields are as in XLS-66, except that `PrincipalRequested`, the fee fields and the interest-rate fields must be absent.
+With a confidential loan the `PrincipalRequested`, the fee fields and the interest-rate fields must be absent, and these fields are added:
 
-| Field Name                         | Required    | JSON Type | Internal Type | Default Value | Description                                                                                       |
-| :--------------------------------- | :---------- | :-------- | :------------ | :------------ | :------------------------------------------------------------------------------------------------ |
-| `BrokerEncryptedAmount`            | Conditional | `string`  | `BLOB`        | N/A           | The principal encrypted under the Broker Key. Subtracted from the Lending Balance.               |
-| `BorrowerEncryptedAmount`          | Conditional | `string`  | `BLOB`        | N/A           | The principal encrypted under the Borrower's key. Credited to the Borrower's inbox.               |
-| `IssuerEncryptedAmount`            | Conditional | `string`  | `BLOB`        | N/A           | The principal encrypted under the Issuer's key.                                                   |
-| `AuditorEncryptedAmount`           | No          | `string`  | `BLOB`        | N/A           | The principal encrypted under the Auditor's key. **Required** if the issuance has an Auditor.     |
-| `BalanceCommitment`                | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Lending Balance's spending balance.                                           |
-| `AmountCommitment`                 | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the principal.                                                                    |
-| `BorrowerEncryptedAmountOwed`      | Conditional | `string`  | `BLOB`        | N/A           | The initial Amount Owed, under the Borrower's key.                                                |
-| `BrokerEncryptedAmountOwed`        | Conditional | `string`  | `BLOB`        | N/A           | The initial Amount Owed, under the Broker Key.                                                   |
-| `BorrowerEncryptedPeriodicPayment` | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment, under the Borrower's key.                                                   |
-| `BrokerEncryptedPeriodicPayment`   | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment, under the Broker Key.                                                      |
-| `ZKProof`                          | Conditional | `string`  | `BLOB`        | N/A           | The `LoanSet` proof (see below).                                                                  |
+| Field Name                      | Required    | JSON Type | Internal Type | Default Value | Description                                                                                                  |
+| :------------------------------ | :---------- | :-------- | :------------ | :------------ | :----------------------------------------------------------------------------------------------------------- |
+| `SenderEncryptedAmount`         | Conditional | `string`  | `BLOB`        | N/A           | The principal under the Broker Key. Subtracted from the Lending Balance, and stored as `BrokerEncryptedPrincipal`. |
+| `DestinationEncryptedAmount`    | Conditional | `string`  | `BLOB`        | N/A           | The principal under the Borrower's key. Credited to the Borrower's inbox, and stored as `BorrowerEncryptedPrincipal`. |
+| `IssuerEncryptedAmount`         | Conditional | `string`  | `BLOB`        | N/A           | The principal under the Issuer's key.                                                                        |
+| `AuditorEncryptedAmount`        | Conditional | `string`  | `BLOB`        | N/A           | The principal under the MPT Auditor's key.                                                                   |
+| `BalanceCommitment`             | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the Lending Balance's spending balance.                                                      |
+| `AmountCommitment`              | Conditional | `string`  | `BLOB`        | N/A           | A commitment to the principal.                                                                               |
+| `ZKProof`                       | Conditional | `string`  | `BLOB`        | N/A           | The 946-byte XLS-96 `ConfidentialMPTSend` proof for the principal.                                           |
+| `LoanAuditorEncryptionKey`      | Conditional | `string`  | `BLOB`        | N/A           | The Loan Auditor's 33-byte compressed ElGamal public key.                                                    |
+| `LoanAuditorEncryptedPrincipal` | Conditional | `string`  | `BLOB`        | N/A           | The principal under the Loan Auditor's key.                                                                  |
+| `BorrowerEncryptedAmountOwed`         | Conditional | `string`  | `BLOB`        | N/A           | The initial Amount Owed under the Borrower's key.                                                            |
+| `BrokerEncryptedAmountOwed`           | Conditional | `string`  | `BLOB`        | N/A           | The initial Amount Owed under the Broker Key.                                                                |
+| `LoanAuditorEncryptedAmountOwed`      | Conditional | `string`  | `BLOB`        | N/A           | The initial Amount Owed under the Loan Auditor's key.                                                        |
+| `BorrowerEncryptedPeriodicPayment`    | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment under the Borrower's key.                                                               |
+| `BrokerEncryptedPeriodicPayment`      | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment under the Broker Key.                                                                   |
+| `LoanAuditorEncryptedPeriodicPayment` | Conditional | `string`  | `BLOB`        | N/A           | The Periodic Payment under the Loan Auditor's key.                                                           |
+| `BorrowerEncryptedInterestRate`       | Conditional | `string`  | `BLOB`        | N/A           | The Interest Rate under the Borrower's key.                                                                  |
+| `BrokerEncryptedInterestRate`         | Conditional | `string`  | `BLOB`        | N/A           | The Interest Rate under the Broker Key.                                                                      |
+| `LoanAuditorEncryptedInterestRate`    | Conditional | `string`  | `BLOB`        | N/A           | The Interest Rate under the Loan Auditor's key.                                                              |
 
-"Conditional" fields are **required** with `tfLoanConfidential`, and not allowed without it.
+"Conditional" fields are required with a confidential `LoanBroker` and not allowed otherwise.
 
-### 11.2. Flags
+### 11.2. Transaction Fee
 
-| Flag Name                  | Flag Value   | Description                                |
-| :------------------------- | :----------- | :----------------------------------------- |
-| `tfLoanConfidential` | `0x00020000` | Create the `Loan` as confidential.   |
+As in XLS-66, plus 9 times the standard base fee, matching the 10 times of XLS-96 `ConfidentialMPTSend`.
 
-### 11.3. State Changes -->
+### 11.3. Failure Conditions
+
+In addition to the XLS-66 conditions, except 6, 7, 9 and 13–20 of XLS-66 §3.8.5.2 (the Vault, fee and interest checks), which do not apply with a confidential `LoanBroker`:
+
+1. Some but not all of the §11.1 fields are present, or they are present with `PrincipalRequested`, a fee field, an interest-rate field or `tfLoanOverpayment`. (`temMALFORMED`)
+2. A ciphertext is malformed. (`temBAD_CIPHERTEXT`)
+3. `LoanAuditorEncryptionKey`, `BalanceCommitment` or `AmountCommitment` is not a valid 33-byte compressed point, or `ZKProof` is not 946 bytes. (`temMALFORMED`)
+4. The ciphertexts of a term do not share their first 33 bytes, that is, they were not made with the same randomness. (`temMALFORMED`)
+5. The §11.1 fields are present but the `LoanBroker` is not confidential, or absent but it is. (`tecNO_PERMISSION`)
+6. The Borrower's `MPToken` has no `HolderEncryptionKey`, `ConfidentialBalanceInbox` or `IssuerEncryptedBalance`. (`tecNO_PERMISSION`)
+7. The Borrower or the `LoanBroker` pseudo-account is locked for the asset. (`tecLOCKED`)
+8. `ZKProof` does not verify against the Lending Balance's `ConfidentialBalanceSpending` and `ConfidentialBalanceVersion`. (`tecBAD_PROOF`)
+
+### 11.4. State Changes
+
+With a confidential `LoanBroker`, XLS-66 state changes 3–6 (the holdings and the Vault transfer) and the `DebtTotal` increase in step 7 do not apply. Instead:
+
+1. Move the principal as in XLS-96 `ConfidentialMPTSend`, from the `LoanBroker` pseudo-account to the Borrower. The Lending Balance's `ConfidentialBalanceSpending` and mirrors are debited and its `ConfidentialBalanceVersion` incremented. The Borrower's `ConfidentialBalanceInbox` and mirrors are credited with the re-randomized ciphertexts.
+2. Create the `Loan` as in XLS-66 step 1, but with the §5.3 fields set to 0, and with `lsfLoanConfidential`, `ConfidentialLoanVersion` 0 and the §5.1 fields from the transaction. `BrokerEncryptedPrincipal` and `BorrowerEncryptedPrincipal` are `SenderEncryptedAmount` and `DestinationEncryptedAmount` as submitted, not re-randomized, so that they keep the principal's shared randomness.
+
+### 11.5. Invariants
+
+With a confidential `LoanBroker`, as for XLS-96 `ConfidentialMPTSend`: `ConfidentialOutstandingAmount`, `OutstandingAmount` and every `MPTAmount` are unchanged. The Vault and `DebtTotal` are also unchanged.
 
 ## 12. Transaction (new): `ConfidentialLoanPay`
 
@@ -277,3 +312,20 @@ SHA-512Half( TxType || Account || MPTokenIssuanceID || Sequence || Account || 0 
 | `MPTokenIssuanceID` | 24 bytes        | The issuance ID of the Vault's asset                         |
 | `Sequence`          | `UINT32`, BE    | The transaction's `Sequence`, or `TicketSequence` if a ticket is used |
 | `0`                 | `UINT32`, BE    | Zero (unused version slot)                                   |
+
+### A.2. `LoanSet` Context Hash
+
+Computed exactly as the XLS-96 `ConfidentialMPTSend` context hash, but with the `LoanSet` transaction type and the `LoanBroker` pseudo-account as the sender:
+
+```
+SHA-512Half( TxType || Account || MPTokenIssuanceID || Sequence || Borrower || Version )
+```
+
+| Component           | Encoding     | Value                                                                  |
+| :------------------ | :----------- | :--------------------------------------------------------------------- |
+| `TxType`            | `UINT16`, BE | `ttLOAN_SET` (80)                                                      |
+| `Account`           | 20 bytes     | The `LoanBroker` pseudo-account                                        |
+| `MPTokenIssuanceID` | 24 bytes     | The issuance ID of the Vault's asset                                   |
+| `Sequence`          | `UINT32`, BE | The transaction's `Sequence`, or `TicketSequence` if a ticket is used  |
+| `Borrower`          | 20 bytes     | The Borrower                                                           |
+| `Version`           | `UINT32`, BE | The Lending Balance's `ConfidentialBalanceVersion`                     |
