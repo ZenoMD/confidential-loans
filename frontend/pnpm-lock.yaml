@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@xrplf/mpt-crypto': file:vendor/xrplf-mpt-crypto-0.1.1.tgz
+  ripple-binary-codec: file:vendor/ripple-binary-codec-2.11.0.tgz
+
 importers:
 
   .:
@@ -46,12 +50,22 @@ importers:
   packages/core:
     dependencies:
       xrpl:
-        specifier: link:../../../xrpl.js/packages/xrpl
-        version: link:../../../xrpl.js/packages/xrpl
+        specifier: file:../../vendor/xrpl-5.3.0.tgz
+        version: file:vendor/xrpl-5.3.0.tgz
     devDependencies:
       '@types/node':
         specifier: 26.6.5
         version: 26.6.5
+
+  packages/integration:
+    dependencies:
+      xrpl:
+        specifier: file:../../vendor/xrpl-5.3.0.tgz
+        version: file:vendor/xrpl-5.3.0.tgz
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.5
+        version: 22.20.5
 
   scripts:
     dependencies:
@@ -64,6 +78,14 @@ importers:
         version: 26.6.5
 
 packages:
+
+  '@noble/curves@2.4.0':
+    resolution: {integrity: sha512-P4/62zrgfH33CneE3Dn4WhJVA22YUU0eR51wKIan4NVRvwsA0YnPTwWGpNbpuacSujmSFLvyzpyuR30+fbq2Ew==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/hashes@2.4.0':
+    resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
+    engines: {node: '>= 20.19.0'}
 
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
@@ -411,6 +433,18 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
+  '@scure/base@2.4.0':
+    resolution: {integrity: sha512-thZ1TuJwFwBblOhgsjDKvvGirBxNp+wSvY/DR6tJBJOTDhdAAcHJ8Vbr2eFnqaxeca4+t0i9KBf+uHYGWwZORg==}
+
+  '@scure/bip32@2.4.0':
+    resolution: {integrity: sha512-i3DS0CptAocyvqE4n3SUkpzeQK4vJMFwWLofTwRiiKo2aWojBOfyMCgfKw9HVpO6fSY5AK86sHS/Uzn8kK9Few==}
+
+  '@scure/bip39@2.4.0':
+    resolution: {integrity: sha512-82dxFbZUYboyOf0AXiydsQrFQ5Q4h9mX+O2UkE91ROYmsc0BKMGZLwDmy96Jpa2+vrtoxomjUhy1RPIgH/r2nA==}
+
+  '@types/node@22.20.5':
+    resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
+
   '@types/node@26.6.5':
     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
 
@@ -542,12 +576,36 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@xrplf/isomorphic@1.0.2':
+    resolution: {integrity: sha512-ncZUdMXr6VlSXtdoiDi0jTH+gBrgGxwVeEidhoegII3PmyErbQsyj6e+j7acmR4LW/lvBkPkzb9QzRfJH0n3rA==}
+    engines: {node: '>=18.0.0'}
+
+  '@xrplf/mpt-crypto@file:vendor/xrplf-mpt-crypto-0.1.1.tgz':
+    resolution: {integrity: sha512-5NMGCObpKaPP7E4jB7C+DwYr4F5vM7U4R6OFzBCbFE6o9RAZO29WJIe81I4mWVEboeWltQbEDIqK+dCYykbNmQ==, tarball: file:vendor/xrplf-mpt-crypto-0.1.1.tgz}
+    version: 0.1.1
+    engines: {node: '>= 18'}
+
+  '@xrplf/secret-numbers@3.0.0':
+    resolution: {integrity: sha512-qpGhAZXv5noMDjCtfzq5NK0y5rrdwTVjKhhPcAYSE+a/gogBOgqdpCKyieprVVPCnmVmJnGeRoZKBAqpCGegsA==}
+
+  bignumber.js@11.1.5:
+    resolution: {integrity: sha512-6WmzCNtUnfKpbozq+hOgWaZMMzORmYBwF1xZScyoIX3QRYWeKTtxxwDOW5tIz7C9BdjkIYHGTcelCLkXg0mndw==}
+
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  eventemitter3@5.0.1:
+    resolution: {integrity: sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==}
+
+  eventemitter3@5.0.4:
+    resolution: {integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==}
+
+  fast-json-stable-stringify@2.1.0:
+    resolution: {integrity: sha512-lhd/wF+Lk98HZoTCtlVraHtfh5XYijIjalXck7saUtuanSDyLMxnHhSXEDJqHxD7msR8D0uCmqlkwjCV8xvwHw==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -691,6 +749,19 @@ packages:
     resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
     engines: {node: '>=0.10.0'}
 
+  ripple-address-codec@5.0.1:
+    resolution: {integrity: sha512-JQHLKuVJV8lv9Qobmn4aUM2Dpv9WRRLKnNWfM8tN02fAbUtG8mUPsu9q9UYX8P76G4qzytEc5ZKMp/3JggNYmw==}
+    engines: {node: '>= 18'}
+
+  ripple-binary-codec@file:vendor/ripple-binary-codec-2.11.0.tgz:
+    resolution: {integrity: sha512-JszyjRvJkAGcm572n3FSpEbbNzLqqgcJ0RadvSEUPXzvWR6fkgaMTAZHMeSORqq/1lrhC3spbEd6/bbZm4G3JQ==, tarball: file:vendor/ripple-binary-codec-2.11.0.tgz}
+    version: 2.11.0
+    engines: {node: '>= 18'}
+
+  ripple-keypairs@3.1.0:
+    resolution: {integrity: sha512-yeqN768gaHStQ76qwaJ2TGxIGMXA4c9tg32n1zMHUWbyfEKXA70XOUH8SQdnAnIQNCASd8hzBZ8Edoqcd+a+IA==}
+    engines: {node: '>= 18'}
+
   rolldown@1.2.15:
     resolution: {integrity: sha512-6odND+fel5zVw3I4Yc2e69gvguDnX0CAAGiNDZSq4ik5WUcaLrkD2GLuog0XcODbor31hZ5ayEMgVDno+KPV5g==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -715,6 +786,9 @@ packages:
     resolution: {integrity: sha512-8FYau96o3NKOhbjKi/qNvG/W5jhzxkbdm5sj9AbZ/5T5sWqn3hJgLfGx27sRKZWTvyzCP8dLRBTf5tBTSRVUNA==}
     engines: {node: '>=16.20.0'}
     hasBin: true
+
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
@@ -762,7 +836,30 @@ packages:
       yaml:
         optional: true
 
+  ws@8.22.0:
+    resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
+  xrpl@file:vendor/xrpl-5.3.0.tgz:
+    resolution: {integrity: sha512-j3drZqiSTdV9Otz4FLGf2RkpMrRjFBbaWYdwBbKMMQBoJ9EQrbndu0NCBAIIJ1+RsK0m/7VrYkIpUNq5VUvTjg==, tarball: file:vendor/xrpl-5.3.0.tgz}
+    version: 5.3.0
+    engines: {node: '>=20.19.0'}
+
 snapshots:
+
+  '@noble/curves@2.4.0':
+    dependencies:
+      '@noble/hashes': 2.4.0
+
+  '@noble/hashes@2.4.0': {}
 
   '@oxc-project/types@0.155.0': {}
 
@@ -927,6 +1024,22 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
+  '@scure/base@2.4.0': {}
+
+  '@scure/bip32@2.4.0':
+    dependencies:
+      '@noble/curves': 2.4.0
+      '@noble/hashes': 2.4.0
+      '@scure/base': 2.4.0
+
+  '@scure/bip39@2.4.0':
+    dependencies:
+      '@noble/hashes': 2.4.0
+
+  '@types/node@22.20.5':
+    dependencies:
+      undici-types: 6.21.0
+
   '@types/node@26.6.5':
     dependencies:
       undici-types: 8.9.0
@@ -999,9 +1112,36 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
+  '@xrplf/isomorphic@1.0.2':
+    dependencies:
+      '@noble/hashes': 2.4.0
+      eventemitter3: 5.0.1
+      ws: 8.22.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@xrplf/mpt-crypto@file:vendor/xrplf-mpt-crypto-0.1.1.tgz': {}
+
+  '@xrplf/secret-numbers@3.0.0':
+    dependencies:
+      '@xrplf/isomorphic': 1.0.2
+      ripple-keypairs: 3.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  bignumber.js@11.1.5: {}
+
   csstype@3.2.3: {}
 
   detect-libc@2.1.2: {}
+
+  eventemitter3@5.0.1: {}
+
+  eventemitter3@5.0.4: {}
+
+  fast-json-stable-stringify@2.1.0: {}
 
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
@@ -1124,6 +1264,32 @@ snapshots:
 
   react@19.3.1: {}
 
+  ripple-address-codec@5.0.1:
+    dependencies:
+      '@scure/base': 2.4.0
+      '@xrplf/isomorphic': 1.0.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  ripple-binary-codec@file:vendor/ripple-binary-codec-2.11.0.tgz:
+    dependencies:
+      '@xrplf/isomorphic': 1.0.2
+      bignumber.js: 11.1.5
+      ripple-address-codec: 5.0.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  ripple-keypairs@3.1.0:
+    dependencies:
+      '@noble/curves': 2.4.0
+      '@xrplf/isomorphic': 1.0.2
+      ripple-address-codec: 5.0.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   rolldown@1.2.15:
     dependencies:
       '@oxc-project/types': 0.155.0
@@ -1179,6 +1345,8 @@ snapshots:
       '@typescript/typescript-win32-arm64': 7.0.2
       '@typescript/typescript-win32-x64': 7.0.2
 
+  undici-types@6.21.0: {}
+
   undici-types@8.9.0: {}
 
   vite@8.3.5(@types/node@26.6.5):
@@ -1191,3 +1359,22 @@ snapshots:
     optionalDependencies:
       '@types/node': 26.6.5
       fsevents: 2.3.3
+
+  ws@8.22.0: {}
+
+  xrpl@file:vendor/xrpl-5.3.0.tgz:
+    dependencies:
+      '@scure/bip32': 2.4.0
+      '@scure/bip39': 2.4.0
+      '@xrplf/isomorphic': 1.0.2
+      '@xrplf/mpt-crypto': file:vendor/xrplf-mpt-crypto-0.1.1.tgz
+      '@xrplf/secret-numbers': 3.0.0
+      bignumber.js: 11.1.5
+      eventemitter3: 5.0.4
+      fast-json-stable-stringify: 2.1.0
+      ripple-address-codec: 5.0.1
+      ripple-binary-codec: file:vendor/ripple-binary-codec-2.11.0.tgz
+      ripple-keypairs: 3.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
