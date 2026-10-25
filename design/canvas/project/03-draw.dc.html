@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Step 3: Draw and merge</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap">
+<style>
+:root{--ink:#ffffff;--mute:rgba(255,255,255,0.72);--dim:rgba(255,255,255,0.56);--rule:rgba(255,255,255,0.12);--rule-strong:rgba(255,255,255,0.32);--key:#627eea;--bar:#5c5e60;--loss:#e5484d;--font-display:'General Sans','Aeonik Pro','Inter',system-ui,sans-serif;--font-body:'Inter',system-ui,-apple-system,sans-serif;--font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;--type-body-lg:400 18px/1.56 var(--font-body);--type-body-sm:400 14px/1.43 var(--font-body)}
+body{margin:0;background:#000000}
+a{color:#ffffff;text-decoration:none}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="min-height: 1080px; background: #000000; color: var(--ink); font-family: var(--font-body)">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 32px; padding: 20px 48px 0">
+    <a href="Main.dc.html" style="display: flex; align-items: baseline; gap: 12px"><span style="font: 500 22px/1 var(--font-display); letter-spacing: -0.3px">zeno<span style="color: var(--key)">.</span></span><span style="font: var(--type-body-sm); color: var(--mute)">Confidential Loans</span></a>
+    <span style="font: var(--type-body-sm); color: var(--mute)"><span style="color: var(--ink)">Investment</span>, 2:56 left on team devnet</span>
+  </header>
+
+  <nav aria-label="Demo steps" style="padding: 28px 48px 0">
+    <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px">
+      <li><a href="01-broker-setup.dc.html" aria-label="Step 1, done: Create broker" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--mute)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.48)"></span><span style="font: 500 13px/1 var(--font-body)">1</span></a></li>
+      <li><a href="02-deposit.dc.html" aria-label="Step 2, done: Subscribe" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--mute)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="20" width="32" height="18" rx="2"></rect><circle cx="20" cy="29" r="4"></circle><path d="M8 16h32v18M12 12h32v18"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.48)"></span><span style="font: 500 13px/1 var(--font-body)">2</span></a></li>
+      <li><a href="03-draw.dc.html" aria-current="page" aria-label="Step 3, current: Draw and merge" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: #ffffff"></span><span style="font: 600 13px/1.3 var(--font-body)">3 Draw and merge</span></a></li>
+      <li><a href="04-originate.dc.html" aria-label="Step 4: Co-sign loans" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">4</span></a></li>
+      <li><a href="05-explorer-loans.dc.html" aria-label="Step 5: Explorer" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">5</span></a></li>
+      <li><a href="06-repay.dc.html" aria-label="Step 6: Repay loan A" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">6</span></a></li>
+      <li><a href="07-settle.dc.html" aria-label="Step 7: Settle" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">7</span></a></li>
+      <li><a href="08-impair-default.dc.html" aria-label="Step 8: Default loan B" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">8</span></a></li>
+      <li><a href="09-explorer-default.dc.html" aria-label="Step 9: Explorer after default" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">9</span></a></li>
+      <li><a href="10-redeem.dc.html" aria-label="Step 10: Redeem" style="display: flex; flex-direction: column; gap: 8px; min-height: 44px; color: var(--dim)"><span aria-hidden="true" style="display: flex; gap: 4px; height: 16px"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="20" width="32" height="18" rx="2"></rect><circle cx="20" cy="29" r="4"></circle><path d="M8 16h32v18M12 12h32v18"></path></svg></span><span style="height: 3px; background: rgba(255,255,255,0.16)"></span><span style="font: 500 13px/1 var(--font-body)">10</span></a></li>
+    </ol>
+  </nav>
+
+  <div style="display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 48px 64px; padding: 40px 48px 64px">
+    <aside aria-label="Who acts on this screen and who can read it" style="flex: 1 1 280px; max-width: 320px; display: flex; flex-direction: column; align-items: flex-end; gap: 32px; text-align: right">
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 16px">
+      <span aria-hidden="true" style="display: flex"><svg width="64" height="64" viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px">
+        <h1 style="margin: 0; font: 500 32px/1.15 var(--font-display); letter-spacing: -0.32px">Broker A</h1>
+        <p style="margin: 0; max-width: 560px; font: var(--type-body-lg); letter-spacing: -0.09px; color: var(--mute)">The Broker draws capital from the vault into its Lending Balance. The amount drawn is public; how it is split between loans is not.</p>
+      </div>
+    </div>
+      <section aria-labelledby="vis" style="width: 100%; display: flex; flex-direction: column; align-items: flex-end; gap: 16px; padding-top: 24px; border-top: 1px solid var(--rule)">
+        <h2 id="vis" style="margin: 0; font: var(--type-body-sm); color: var(--mute)">Visible to</h2>
+        <dl style="margin: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 14px">
+          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Outsider<span aria-hidden="true" style="display: flex"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The amount drawn and the Broker's DebtTotal</dd></div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Broker<span aria-hidden="true" style="display: flex"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The Lending Balance</dd></div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Borrowers<span aria-hidden="true" style="display: flex"><svg width="16" height="16" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The amount drawn</dd></div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Issuer<span aria-hidden="true" style="width: 16px"></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The Lending Balance</dd></div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end"><dt style="display: flex; align-items: center; gap: 8px; font: 500 15px/1.4 var(--font-body)">Auditor<span aria-hidden="true" style="width: 16px"></span></dt><dd style="margin: 4px 0 0; font: var(--type-body-sm); color: var(--mute)">The Lending Balance</dd></div>
+        </dl>
+      </section>
+    </aside>
+
+  <main style="flex: 999 1 560px; min-width: 0; max-width: 820px; display: flex; flex-direction: column; gap: 48px">
+
+    <div style="display: flex; align-items: flex-end; flex-wrap: wrap; gap: 24px 32px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font: var(--type-body-sm); color: var(--mute)">Vault, available</span>
+        <span style="font: 500 40px/1.05 var(--font-display); letter-spacing: -0.4px">[available]</span>
+        <span style="font: var(--type-body-sm); color: var(--dim)">Public</span>
+      </div>
+      <span style="padding-bottom: 30px; color: var(--dim); display: flex"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"></path></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font: var(--type-body-sm); color: var(--mute)">Lending Balance inbox</span>
+        <span style="font: 500 40px/1.05 var(--font-display); letter-spacing: -0.4px; color: var(--key)">{{inbox}}</span>
+        <span style="font: var(--type-body-sm); color: var(--dim)">Can't be lent until merged</span>
+      </div>
+      <span style="padding-bottom: 30px; color: var(--dim); display: flex"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"></path></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font: var(--type-body-sm); color: var(--mute)">Lending Balance, spendable</span>
+        <span style="font: 500 40px/1.05 var(--font-display); letter-spacing: -0.4px; color: var(--key)">{{spending}}</span>
+        <span style="font: var(--type-body-sm); color: var(--dim)">Funds both loans</span>
+      </div>
+    </div>
+    <p style="margin: -32px 0 0; font: var(--type-body-sm); color: var(--dim)">Blue amounts are readable with Broker A's key in this browser.</p>
+
+    <section aria-labelledby="draw" style="display: flex; flex-direction: column; gap: 16px">
+      <h2 id="draw" style="margin: 0; font: 500 20px/1.4 var(--font-display)">Draw</h2>
+      <label style="display: flex; flex-direction: column; gap: 6px; max-width: 560px; font: var(--type-body-sm); color: var(--mute)">Amount in CUSD, public
+        <input type="text" placeholder="[principal A + principal B]" style="width: 100%; box-sizing: border-box; height: 64px; padding: 0; border: 0; border-bottom: 1px solid var(--rule-strong); background: transparent; color: var(--ink); font: 500 40px/1 var(--font-display); letter-spacing: -0.4px">
+      </label>
+      <p style="margin: 0; max-width: 640px; font: var(--type-body-sm); color: var(--mute)">Draws are allowed only during Investment and up to the Broker's limit. The vault's available balance falls and the Broker's DebtTotal rises by the same public amount. Both loans must validate within the next <span style="color: var(--ink)">0:56</span>.</p>
+    </section>
+
+    <section aria-labelledby="steps" style="display: flex; flex-direction: column; gap: 20px">
+      <h2 id="steps" style="margin: 0; font: 500 20px/1.4 var(--font-display)">Two transactions</h2>
+      <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 640px">
+        <li style="display: flex; flex-direction: column; gap: 10px"><span style="{{bar1}}"></span><span style="font: 500 16px/1.3 var(--font-body)">Draw from the vault</span><span style="font: var(--type-body-sm); color: var(--mute)">LoanBrokerDraw, into the inbox</span></li>
+        <li style="display: flex; flex-direction: column; gap: 10px"><span style="{{bar2}}"></span><span style="font: 500 16px/1.3 var(--font-body)">Merge into spending</span><span style="font: var(--type-body-sm); color: var(--mute)">LoanBrokerMergeInbox</span></li>
+      </ol>
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <button type="button" onClick="{{advance}}" style="align-self: flex-start; min-height: 52px; padding: 0 28px; border: 0; border-radius: 9999px; background: #ffffff; color: #000000; font: 600 16px/1 var(--font-body); letter-spacing: 0.24px; cursor: pointer">{{cta}}</button>
+        <p style="margin: 0; font: var(--type-body-sm); color: var(--dim)">Both are new transactions: about 5 s each, estimated.</p>
+      </div>
+    </section>
+
+    <a href="04-originate.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 9999px; border: 1px solid var(--rule-strong); font: 500 14px/1 var(--font-body)">Continue to step 4: Co-sign loans</a>
+  </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const stage = (this.state && this.state.stage) || 0;
+    const bar = (i) => ({ height: '3px', background: stage > i ? '#ffffff' : 'rgba(255,255,255,0.16)' });
+    const ctas = ['Draw from the vault', 'Merge into spending', 'Drawn and merged. Run it again'];
+    return {
+      inbox: stage === 1 ? '[drawn]' : '0',
+      spending: stage === 2 ? '[drawn]' : '0',
+      bar1: bar(0),
+      bar2: bar(1),
+      cta: ctas[stage],
+      advance: () => this.setState({ stage: stage < 2 ? stage + 1 : 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

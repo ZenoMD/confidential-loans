@@ -1,0 +1,144 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "01-broker-setup.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "1 Broker: create confidential LoanBroker",
+      "w": 1280,
+      "x": 0,
+      "y": 1200
+    },
+    "02-deposit.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "2 Depositors: subscribe",
+      "w": 1280,
+      "x": 1360,
+      "y": 1200
+    },
+    "03-draw.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "3 Broker: draw, then merge",
+      "w": 1280,
+      "x": 2720,
+      "y": 1200
+    },
+    "04-originate.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "4 Broker + borrowers: co-sign loans",
+      "w": 1280,
+      "x": 4080,
+      "y": 1200
+    },
+    "05-explorer-loans.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "5 Mini explorer: loans created",
+      "w": 1280,
+      "x": 5440,
+      "y": 1200
+    },
+    "06-repay.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "6 Borrower A: repay",
+      "w": 1280,
+      "x": 0,
+      "y": 2400
+    },
+    "07-settle.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "7 Broker: settle to vault",
+      "w": 1280,
+      "x": 1360,
+      "y": 2400
+    },
+    "08-impair-default.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "8 Broker: impair, then default loan B",
+      "w": 1280,
+      "x": 2720,
+      "y": 2400
+    },
+    "09-explorer-default.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "9 Mini explorer: after default",
+      "w": 1280,
+      "x": 4080,
+      "y": 2400
+    },
+    "10-redeem.dc.html": {
+      "expand": "fill",
+      "h": 1080,
+      "is_interactive": true,
+      "title": "10 Depositors: redeem",
+      "w": 1280,
+      "x": 5440,
+      "y": 2400
+    },
+    "Main.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Flow map: 10 steps, 4 lanes",
+      "w": 1760,
+      "x": 0,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-24T19:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "title": {
+      "kind": "title1",
+      "maxW": 6720,
+      "text": "Confidential Loans: demo user flows",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "willem": {
+      "fill": "orange",
+      "text": "Open with Willem (SPEC.md at 2c68d1f):\n\n1. Default books no loss: LoanManage uses TotalValueOutstanding, which is 0 on a confidential loan, so the vault's share price ignores loan B and the last depositor to redeem takes the shortfall. How should a default write it off?\n\n2. Overpayment: every payment must equal the periodic payment, or the full amount owed. Allow payment >= periodic payment (two range proofs instead of the equality proof)?\n\n3. Does ConfidentialLoanPay clear impairment, as LoanPay does?\n\n4. The overview settles after a loan completes; LoanBrokerSettle has no such check.\n\n5. Who holds the Loan Auditor key? Proposal: reuse the MPT Auditor key.\n\nAnswered: LoanSet, ConfidentialLoanPay and LoanBrokerSettle fields and proofs; the settled amount is public; interest reaches the vault as settle above DebtTotal; a regular payment moves NextPaymentDueDate by one PaymentInterval.",
+      "w": 440,
+      "x": 1840,
+      "y": 0
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "01-broker-setup.dc.html",
+    "02-deposit.dc.html",
+    "03-draw.dc.html",
+    "04-originate.dc.html",
+    "05-explorer-loans.dc.html",
+    "06-repay.dc.html",
+    "07-settle.dc.html",
+    "08-impair-default.dc.html",
+    "09-explorer-default.dc.html",
+    "10-redeem.dc.html"
+  ],
+  "pages": [],
+  "title": "Confidential Loans User Flows"
+}

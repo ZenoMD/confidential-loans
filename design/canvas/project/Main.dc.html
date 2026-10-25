@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Flow map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+:root{--brand-primary:#627eea;--brand-primary-bright:#6382f8;--canvas-dark:#000000;--surface-deep:#0a0a0a;--surface-elevated:#16181a;--hairline-dark:rgba(255,255,255,0.12);--divider-soft:rgba(255,255,255,0.06);--on-dark:#ffffff;--on-dark-mute:rgba(255,255,255,0.72);--stone:#8d969e;--accent-teal:#00a87e;--accent-warning:#ec7e00;--font-display:'General Sans','Aeonik Pro','Inter',system-ui,sans-serif;--font-body:'Inter',system-ui,-apple-system,sans-serif;--font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;--type-display-lg:500 48px/1.21 var(--font-display);--type-heading-sm:500 20px/1.4 var(--font-display);--type-body-lg:400 18px/1.56 var(--font-body);--type-body-sm:400 14px/1.43 var(--font-body);--type-caption:400 13px/1.4 var(--font-body);--tracking-display-lg:-0.48px;--tracking-body-lg:-0.09px;--tracking-ui:0.24px}
+body{margin:0;background:#000000}
+a{color:#ffffff;text-decoration:none}a:hover{color:#ffffff}
+</style>
+</helmet>
+<div style="position: relative; width: 1760px; height: 1080px; box-sizing: border-box; background: var(--canvas-dark); color: var(--on-dark); font-family: var(--font-body); overflow: hidden">
+
+  <div style="position: absolute; left: 64px; top: 56px; display: flex; align-items: baseline; gap: 14px">
+    <span style="font: 500 24px/1 var(--font-display); letter-spacing: -0.3px">zeno<span style="color: var(--brand-primary)">.</span></span>
+    <span style="font: var(--type-body-sm); color: var(--on-dark-mute)">Confidential Loans</span>
+  </div>
+  <h1 style="position: absolute; left: 64px; top: 104px; margin: 0; font: var(--type-display-lg); letter-spacing: var(--tracking-display-lg)">Demo user flow: ten screens, two loans</h1>
+  <p style="position: absolute; left: 64px; top: 176px; width: 920px; margin: 0; font: var(--type-body-lg); letter-spacing: var(--tracking-body-lg); color: var(--on-dark-mute)">Loan A is repaid on time. Loan B misses its payment, is impaired, then defaulted. Wallets, CUSD, holder balances and the vault are created by scripts before the first screen. Click any step to open its screen.</p>
+
+  <div style="position: absolute; left: 1100px; top: 112px; width: 596px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; font: var(--type-body-sm); color: var(--on-dark-mute)">
+    <span style="display: flex; align-items: center; gap: 10px"><span style="color: var(--brand-primary); display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span>Encrypted amounts</span>
+    <span style="display: flex; align-items: center; gap: 10px"><span style="color: var(--stone); display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>Public on ledger</span>
+    <span style="display: flex; align-items: center; gap: 10px"><span style="color: var(--on-dark); display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span>Read-only view, no transaction</span>
+    <span style="display: flex; align-items: center; gap: 10px"><span style="width: 8px; height: 8px; margin: 0 4px; border-radius: 9999px; background: var(--accent-warning)"></span>Open question with Willem</span>
+  </div>
+
+  <div style="position: absolute; left: 264px; top: 300px; width: 282px; height: 40px; box-sizing: border-box; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-radius: 9999px; background: var(--surface-elevated); font: 500 13px/1 var(--font-body); letter-spacing: var(--tracking-ui)"><span>Subscription</span><span style="color: var(--stone)">30 s</span></div>
+  <div style="position: absolute; left: 551px; top: 300px; width: 855px; height: 40px; box-sizing: border-box; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-radius: 9999px; background: var(--surface-elevated); font: 500 13px/1 var(--font-body); letter-spacing: var(--tracking-ui)"><span>Investment</span><span style="color: var(--stone)">180 s minimum; loans in the first 60 s</span></div>
+  <div style="position: absolute; left: 1411px; top: 300px; width: 285px; height: 40px; box-sizing: border-box; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border-radius: 9999px; background: var(--surface-elevated); font: 500 13px/1 var(--font-body); letter-spacing: var(--tracking-ui)"><span>Redemption</span><span style="color: var(--stone)">withdrawals open</span></div>
+
+  <div style="position: absolute; left: 64px; top: 372px; width: 1632px; height: 132px; border-top: 1px solid var(--hairline-dark)"></div>
+  <div style="position: absolute; left: 64px; top: 504px; width: 1632px; height: 132px; border-top: 1px solid var(--hairline-dark); background: var(--surface-deep)"></div>
+  <div style="position: absolute; left: 64px; top: 636px; width: 1632px; height: 132px; border-top: 1px solid var(--hairline-dark)"></div>
+  <div style="position: absolute; left: 64px; top: 768px; width: 1632px; height: 132px; border-top: 1px solid var(--hairline-dark); border-bottom: 1px solid var(--hairline-dark); background: var(--surface-deep)"></div>
+
+  <div style="position: absolute; left: 64px; top: 396px; width: 180px; display: flex; flex-direction: column; gap: 4px">
+    <span style="display: flex; align-items: center; gap: 8px; font: var(--type-heading-sm)"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="20" width="32" height="18" rx="2"></rect><circle cx="20" cy="29" r="4"></circle><path d="M8 16h32v18M12 12h32v18"></path></svg>Depositors</span>
+    <span style="font: var(--type-caption); color: var(--stone)">depositorA, depositorB</span>
+  </div>
+  <div style="position: absolute; left: 64px; top: 528px; width: 180px; display: flex; flex-direction: column; gap: 4px">
+    <span style="display: flex; align-items: center; gap: 8px; font: var(--type-heading-sm)"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18L24 7l18 11H6z"></path><path d="M8 21h32M12 21v13M20 21v13M28 21v13M36 21v13M8 37h32M6 41h36"></path></svg>Broker</span>
+    <span style="font: var(--type-caption); color: var(--stone)">brokerA</span>
+  </div>
+  <div style="position: absolute; left: 64px; top: 660px; width: 180px; display: flex; flex-direction: column; gap: 4px">
+    <span style="display: flex; align-items: center; gap: 8px; font: var(--type-heading-sm)"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16l4-8h28l4 8"></path><path d="M6 16q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0q4.5 6 9 0"></path><path d="M10 21v20M38 21v20M8 41h32M10 31h28"></path><circle cx="17" cy="28" r="3"></circle><circle cx="24" cy="28" r="3"></circle><circle cx="31" cy="28" r="3"></circle></svg>Borrowers</span>
+    <span style="font: var(--type-caption); color: var(--stone)">borrowerA, borrowerB</span>
+  </div>
+  <div style="position: absolute; left: 64px; top: 792px; width: 180px; display: flex; flex-direction: column; gap: 4px">
+    <span style="display: flex; align-items: center; gap: 8px; font: var(--type-heading-sm)"><svg width="24" height="24" viewBox="0 0 48 48" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="21" cy="21" r="12"></circle><path d="M30 30l11 11"></path></svg>Explorer</span>
+    <span style="font: var(--type-caption); color: var(--stone)">outsider, broker view</span>
+  </div>
+
+  <a href="01-broker-setup.dc.html" style="position: absolute; left: 272px; top: 514px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">01<span style="flex: 1"></span><span style="color: var(--brand-primary); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Create confidential LoanBroker</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">LoanBrokerSet</span>
+  </a>
+
+  <a href="02-deposit.dc.html" style="position: absolute; left: 415px; top: 382px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">02<span style="flex: 1"></span><span style="color: var(--stone); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Subscribe to the vault</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">VaultDeposit x2</span>
+  </a>
+
+  <a href="03-draw.dc.html" style="position: absolute; left: 558px; top: 514px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">03<span style="flex: 1"></span><span style="color: var(--brand-primary); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Draw, then merge</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">LoanBrokerDraw, MergeInbox</span>
+  </a>
+
+  <a href="04-originate.dc.html" style="position: absolute; left: 701px; top: 514px; width: 128px; height: 244px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">04<span style="flex: 1"></span><span style="color: var(--brand-primary); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Co-sign loan A and loan B</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">LoanSet x2</span>
+    <span style="flex: 1"></span>
+    <span style="font: var(--type-caption); color: var(--on-dark-mute)">Broker signs, then each borrower co-signs. Principal lands in the borrower's confidential inbox.</span>
+  </a>
+
+  <a href="05-explorer-loans.dc.html" style="position: absolute; left: 845px; top: 778px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">05<span style="flex: 1"></span><span style="color: var(--on-dark); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Outsider vs broker view</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">no transaction</span>
+  </a>
+
+  <a href="06-repay.dc.html" style="position: absolute; left: 988px; top: 646px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">06<span style="flex: 1"></span><span style="width: 8px; height: 8px; border-radius: 9999px; background: var(--accent-warning)"></span><span style="color: var(--brand-primary); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Borrower A repays</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">MergeInbox, ConfidentialLoanPay</span>
+  </a>
+
+  <a href="07-settle.dc.html" style="position: absolute; left: 1131px; top: 514px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">07<span style="flex: 1"></span><span style="color: var(--brand-primary); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Settle back to the vault</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">MergeInbox, LoanBrokerSettle</span>
+  </a>
+
+  <a href="08-impair-default.dc.html" style="position: absolute; left: 1274px; top: 514px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">08<span style="flex: 1"></span><span style="width: 8px; height: 8px; border-radius: 9999px; background: var(--accent-warning)"></span><span style="color: var(--stone); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Impair, then default loan B</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">LoanManage x2</span>
+  </a>
+
+  <a href="09-explorer-default.dc.html" style="position: absolute; left: 1418px; top: 778px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">09<span style="flex: 1"></span><span style="color: var(--on-dark); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Outsider vs broker view</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">no transaction</span>
+  </a>
+
+  <a href="10-redeem.dc.html" style="position: absolute; left: 1561px; top: 382px; width: 128px; height: 112px; box-sizing: border-box; padding: 12px; border-radius: 12px; background: var(--surface-elevated); border: 1px solid var(--hairline-dark); display: flex; flex-direction: column; gap: 6px">
+    <span style="display: flex; align-items: center; gap: 6px; font: 600 12px/1 var(--font-body); color: var(--on-dark-mute)">10<span style="flex: 1"></span><span style="width: 8px; height: 8px; border-radius: 9999px; background: var(--accent-warning)"></span><span style="color: var(--stone); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span></span>
+    <span style="font: 500 14px/1.25 var(--font-display)">Redeem, absorbing the loss</span>
+    <span style="font: 400 11px/1.3 var(--font-mono); color: var(--stone); overflow-wrap: anywhere">VaultWithdraw x2</span>
+  </a>
+
+  <div style="position: absolute; left: 64px; top: 940px; width: 1632px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font: 600 13px/1 var(--font-body); letter-spacing: var(--tracking-ui); color: var(--on-dark)">Origination window</span>
+      <span style="font: var(--type-body-sm); color: var(--on-dark-mute)">Both loans must be created within the first 60 s of Investment, or LoanSet fails with tecNO_PERMISSION.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font: 600 13px/1 var(--font-body); letter-spacing: var(--tracking-ui); color: var(--on-dark)">Repay and default</span>
+      <span style="font: var(--type-body-sm); color: var(--on-dark-mute)">Loan A repays about 20 s after creation. Loan B can default about 2 min 10 s after creation, once due date and grace pass.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font: 600 13px/1 var(--font-body); letter-spacing: var(--tracking-ui); color: var(--on-dark)">Redemption</span>
+      <span style="font: var(--type-body-sm); color: var(--on-dark-mute)">Opens at least 180 s after Subscription closes. The recorded video is sped up, so waits need not fit a live slot.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1760,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
