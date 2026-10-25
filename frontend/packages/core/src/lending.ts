@@ -2,13 +2,6 @@ import type { Client, TransactionMetadata, TxResponse, Wallet } from 'xrpl'
 
 import { submit } from './submit.ts'
 
-/** Loan broker terms, in 1/10 basis points (10000 = 10%), as XLS-66 stores them. */
-export interface BrokerTerms {
-  managementFeeRate: number
-  coverRateMinimum: number
-  coverRateLiquidation: number
-}
-
 function createdId(response: TxResponse, entryType: string): string {
   const meta = response.result.meta as TransactionMetadata
   for (const node of meta.AffectedNodes) {
@@ -58,50 +51,28 @@ export async function createClosedVault(
 }
 
 /**
- * Creates the loan broker that lends from a vault.
+ * Creates the loan broker that lends from a vault, on the terms SPEC.md 4.2 sets for a
+ * confidential broker: no management fee and no first-loss cover, so depositors carry all losses.
  *
  * @param client - Connected client.
  * @param owner - The vault owner, who becomes the broker.
  * @param vaultID - Vault to lend from.
- * @param terms - Management fee and first-loss cover rates.
+ * @param debtMaximum - Most the broker may owe the vault. Drawn funds become confidential supply,
+ *   which bounds every decryption, so this cap also bounds balance-read time.
  * @returns The LoanBroker ID and transaction hash.
  */
 export async function createLoanBroker(
   client: Client,
   owner: Wallet,
   vaultID: string,
-  terms: BrokerTerms,
+  debtMaximum: bigint,
 ): Promise<{ loanBrokerID: string; hash: string }> {
   const tx = {
     TransactionType: 'LoanBrokerSet',
     Account: owner.address,
     VaultID: vaultID,
-    ManagementFeeRate: terms.managementFeeRate,
-    CoverRateMinimum: terms.coverRateMinimum,
-    CoverRateLiquidation: terms.coverRateLiquidation,
+    DebtMaximum: debtMaximum.toString(),
   } as const
   const { hash, response } = await submit(client, tx, owner)
   return { loanBrokerID: createdId(response, 'LoanBroker'), hash }
-}
-
-/**
- * Deposits first-loss cover: broker funds that absorb losses before depositors do when a loan
- * defaults.
- *
- * @returns The transaction hash.
- */
-export async function depositCover(
-  client: Client,
-  owner: Wallet,
-  loanBrokerID: string,
-  mptIssuanceID: string,
-  amount: bigint,
-): Promise<string> {
-  const tx = {
-    TransactionType: 'LoanBrokerCoverDeposit',
-    Account: owner.address,
-    LoanBrokerID: loanBrokerID,
-    Amount: { mpt_issuance_id: mptIssuanceID, value: amount.toString() },
-  } as const
-  return (await submit(client, tx, owner)).hash
 }

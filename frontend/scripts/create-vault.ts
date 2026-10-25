@@ -1,12 +1,6 @@
 import { parseArgs } from 'node:util'
 
-import { readMPToken } from '@confidential-loans/core/confidential'
-import {
-  createClosedVault,
-  createLoanBroker,
-  depositCover,
-  ledgerTime,
-} from '@confidential-loans/core/lending'
+import { createClosedVault, createLoanBroker, ledgerTime } from '@confidential-loans/core/lending'
 import { txLink, withClient } from '@confidential-loans/core/network'
 
 import { roleWallet } from './env.ts'
@@ -15,14 +9,17 @@ import { readState, saveState } from './state.ts'
 const USAGE = `Usage: node scripts/create-vault.ts [--broker brokerA|brokerB]
                                    [--subscription <seconds>] [--investment <seconds>]
 
-Creates a closed-ended CUSD vault owned by the broker, its LoanBroker, and first-loss cover.
+Creates a closed-ended CUSD vault owned by the broker and its LoanBroker.
   --subscription  seconds from now until deposits close (default 300)
   --investment    seconds between deposits closing and withdrawals opening, at least 180
                   (default 600)`
 
-/** 1% management fee, 10% minimum cover, 50% of the minimum liquidated on default. */
-const TERMS = { managementFeeRate: 1000, coverRateMinimum: 10000, coverRateLiquidation: 50000 }
-const COVER = 10_000_000n
+/**
+ * Per-broker draw cap. Decryption takes about 3.6 s per 1,000,000 of confidential supply
+ * (LEARNINGS.md), so two brokers at this cap plus the 500,000 treasury supply keep each balance
+ * read near 3.6 s.
+ */
+const DEBT_MAXIMUM = 250_000n
 const RIPPLE_EPOCH_OFFSET = 946_684_800
 
 const { values } = parseArgs({
@@ -56,12 +53,6 @@ const isoTime = (rippleSeconds: number): string =>
 
 await withClient(async (client) => {
   const owner = roleWallet(broker)
-  const held = BigInt((await readMPToken(client, owner.address, token))?.MPTAmount ?? '0')
-  if (held < COVER) {
-    throw new Error(
-      `${broker} holds ${held} public CUSD, below the ${COVER} cover; run node scripts/fund-holders.ts`,
-    )
-  }
 
   const subscriptionDate = (await ledgerTime(client)) + subscriptionSeconds
   const redemptionDate = subscriptionDate + investmentSeconds
@@ -71,13 +62,11 @@ await withClient(async (client) => {
   console.log(`  withdrawals from ${isoTime(redemptionDate)}`)
   console.log(`  ${txLink(vault.hash)}`)
 
-  const loanBroker = await createLoanBroker(client, owner, vault.vaultID, TERMS)
-  console.log(`LoanBroker ${loanBroker.loanBrokerID}: 1% management fee, 10% minimum cover`)
+  const loanBroker = await createLoanBroker(client, owner, vault.vaultID, DEBT_MAXIMUM)
+  console.log(
+    `LoanBroker ${loanBroker.loanBrokerID}: no fee or cover, debt capped at ${DEBT_MAXIMUM}`,
+  )
   console.log(`  ${txLink(loanBroker.hash)}`)
-
-  const coverHash = await depositCover(client, owner, loanBroker.loanBrokerID, token, COVER)
-  console.log(`Deposited ${COVER} CUSD of first-loss cover`)
-  console.log(`  ${txLink(coverHash)}`)
 
   saveState({
     vaults: {
