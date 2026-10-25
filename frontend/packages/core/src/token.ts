@@ -41,7 +41,7 @@ export async function createConfidentialToken(
   client: Client,
   issuer: Wallet,
 ): Promise<{ mptIssuanceID: string; hash: string }> {
-  const { hash, response } = await submit(
+  const { hash, meta } = await submit(
     client,
     {
       TransactionType: 'MPTokenIssuanceCreate',
@@ -66,9 +66,11 @@ export async function createConfidentialToken(
     },
     issuer,
   )
-  const meta = response.result.meta as TransactionMetadata & { mpt_issuance_id?: string }
-  if (meta.mpt_issuance_id === undefined) throw new Error(`No mpt_issuance_id in ${hash}`)
-  return { mptIssuanceID: meta.mpt_issuance_id, hash }
+  const { mpt_issuance_id: mptIssuanceID } = meta as TransactionMetadata & {
+    mpt_issuance_id?: string
+  }
+  if (mptIssuanceID === undefined) throw new Error(`No mpt_issuance_id in ${hash}`)
+  return { mptIssuanceID, hash }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NETWORK_WSS, readServerStatus } from '@confidential-loans/core/network'
+import { NETWORK_WSS, connectLedger, readServerStatus } from '@confidential-loans/core/network'
 import type { ServerStatus } from '@confidential-loans/core/network'
 
 type Status =
@@ -12,12 +12,21 @@ export function App() {
 
   useEffect(() => {
     let active = true
-    readServerStatus().then(
-      (server) => active && setStatus({ kind: 'ok', server }),
-      (error: unknown) => active && setStatus({ kind: 'error', message: String(error) }),
-    )
+    const opening = connectLedger()
+    opening
+      .then((ledger) => readServerStatus(ledger.client))
+      .then(
+        (server) => active && setStatus({ kind: 'ok', server }),
+        (error: unknown) => active && setStatus({ kind: 'error', message: String(error) }),
+      )
     return () => {
       active = false
+      opening
+        .then(
+          (ledger) => ledger.close(),
+          () => undefined,
+        )
+        .catch((error: unknown) => console.error('Closing the ledger connection failed', error))
     }
   }, [])
 
